@@ -206,6 +206,7 @@ footer a:hover { color:var(--gold); }
         <button class="btn-primary" onclick="showCreate()">Create New Session</button>
       </div>
     </div>
+
     <div id="create-panel" style="display:none;max-width:440px;margin:28px auto 0;">
       <div class="panel">
         <div class="panel-title">⚙ New Session</div>
@@ -231,6 +232,33 @@ footer a:hover { color:var(--gold); }
         </div>
       </div>
     </div>
+
+    <!-- HOW TO USE -->
+    <div style="max-width:680px;margin:48px auto 0;">
+      <div class="divider"><div class="divider-icon">◆</div></div>
+      <div class="panel-title text-center" style="margin-bottom:20px;">How to Use</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">① CREATE</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">One person clicks <em>Create New Session</em> and shares the <strong style="color:var(--text);">Player Join Link</strong> with both competitors. Keep the Admin Link private for the tournament organiser.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">② JOIN</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">Each player opens the link, enters their <strong style="color:var(--text);">AoE2 Steam name</strong>, and selects their slot (Player 1 or Player 2). The game begins automatically once both are connected.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">③ DRAFT</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">Each player is secretly shown <strong style="color:var(--text);">6 unique bounties</strong>. Pick one, lock in, then confirm. You can refresh your pool using a <strong style="color:var(--text);">refresh</strong> (limited per set). Pools never overlap.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">④ PLAY</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">Play your AoE2 game. When finished, both players click <strong style="color:var(--text);">Game Done</strong>. Your used bounty is retired from your pool. The next draft begins with your remaining bounties.</p>
+        </div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border-gold);padding:14px;margin-top:14px;font-size:0.86rem;color:var(--text-dim);line-height:1.6;">
+        <strong style="color:var(--gold);">Pool rules:</strong> Your bounty pool <em>shrinks</em> by one each game as you use bounties. Refreshing replaces your entire pool with a fresh 6 (costs one refresh token). Refreshes are shared across the whole set — use them wisely. Bounties never repeat across both players' active pools.
+      </div>
+    </div>
   </div>
 
   <!-- JOIN -->
@@ -250,7 +278,7 @@ footer a:hover { color:var(--gold); }
         </div>
       </div>
 
-      <div class="slot-grid mt-16" id="slot-grid">
+      <div class="slot-grid mt-16" id="slot-grid" style="grid-template-columns:1fr 1fr; max-width:440px; margin:20px auto 0;">
         <div class="slot-card" id="slot-player1" onclick="selectSlot('player1')">
           <div class="slot-icon">⚔</div>
           <div class="slot-name">Player 1</div>
@@ -261,11 +289,12 @@ footer a:hover { color:var(--gold); }
           <div class="slot-name">Player 2</div>
           <div class="slot-status" id="slot-player2-status">Available</div>
         </div>
-        <!-- <div class="slot-card" id="slot-admin" onclick="selectSlot('admin')">
+        <!-- Admin slot hidden from players — accessible via /join/ID?role=admin -->
+        <div class="slot-card" id="slot-admin" onclick="selectSlot('admin')" style="display:none;">
           <div class="slot-icon">👁</div>
           <div class="slot-name">Admin</div>
           <div class="slot-status" id="slot-admin-status">Available</div>
-        </div> -->
+        </div>
       </div>
       <div id="join-error-2"></div>
     </div>
