@@ -13,121 +13,305 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.json')));
+const ADMIN_PASSWORD = 'passwrang321';
+
+// Global default refresh limit (admin can change)
+let globalDefaultRefreshLimit = 2;
 
 const sessions = {};
 
-function drawBounties(usedIds, count = 6, exclude = []) {
-  const available = BOUNTY_POOL.filter(b => !usedIds.has(b.id) && !exclude.includes(b.id));
-  const shuffled = available.sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+// ── HELPERS ────────────────────────────────────────────────────────
+function drawBounties(usedIds, count = 6, excludeIds = []) {
+  const available = BOUNTY_POOL.filter(b => !usedIds.has(b.id) && !excludeIds.includes(b.id));
+  return available.sort(() => Math.random() - 0.5).slice(0, count);
 }
 
-function createSession(adminRefreshLimit) {
+function freshPlayer() {
+  return {
+    bounties: [],
+    selectedBounty: null,
+    lockedIn: false,
+    confirmedReady: false,
+    gameDoneReady: false,
+    refreshesUsed: 0,  // per-set
+  };
+}
+
+function createSession() {
   const sessionId = uuidv4();
   const session = {
     id: sessionId,
-    adminRefreshLimit: adminRefreshLimit || 3,
+    refreshLimit: globalDefaultRefreshLimit,
     slots: { player1: null, player2: null, admin: null },
     playerNames: { player1: null, player2: null },
     gameNumber: 0,
     status: 'waiting',
     usedBountyIds: new Set(),
-    players: {
-      player1: { bounties: [], selectedBounty: null, lockedIn: false, refreshesUsed: 0, nextGameReady: false, confirmedReady: false, gameDoneReady: false },
-      player2: { bounties: [], selectedBounty: null, lockedIn: false, refreshesUsed: 0, nextGameReady: false, confirmedReady: false, gameDoneReady: false },
-    },
+    players: { player1: freshPlayer(), player2: freshPlayer() },
     gameHistory: [],
+    createdAt: Date.now(),
   };
   sessions[sessionId] = session;
   return session;
 }
 
-
-function startBountyPhase(session) {
-  session.gameNumber++;
+function startFirstGame(session) {
+  session.gameNumber = 1;
   session.status = 'bounty_phase';
-  for (const role of ['player1', 'player2']) {
-    session.players[role].selectedBounty = null;
-    session.players[role].lockedIn = false;
-    session.players[role].nextGameReady = false;
-  }
-  const p1Bounties = drawBounties(session.usedBountyIds, 6, []);
-  const p1Ids = p1Bounties.map(b => b.id);
-  const p2Bounties = drawBounties(session.usedBountyIds, 6, p1Ids);
-  session.players.player1.bounties = p1Bounties;
-  session.players.player2.bounties = p2Bounties;
-  emitSessionState(session);
+  const p1 = drawBounties(session.usedBountyIds, 6, []);
+  const p1Ids = p1.map(b => b.id);
+  const p2 = drawBounties(session.usedBountyIds, 6, p1Ids);
+  session.players.player1.bounties = p1;
+  session.players.player2.bounties = p2;
+  emitState(session);
 }
 
-function emitSessionState(session) {
-  const slots = session.slots;
-  const baseState = {
+function advanceGame(session) {
+  const p1 = session.players.player1;
+  const p2 = session.players.player2;
+
+  // Record history
+  session.gameHistory.push({
+    game: session.gameNumber,
+    player1: p1.selectedBounty,
+    player2: p2.selectedBounty,
+  });
+
+  // Mark used
+  if (p1.selectedBounty) session.usedBountyIds.add(p1.selectedBounty.id);
+  if (p2.selectedBounty) session.usedBountyIds.add(p2.selectedBounty.id);
+
+  session.gameNumber++;
+  session.status = 'bounty_phase';
+
+  // Remove used bounty from each player's pool (pool shrinks)
+  p1.bounties = p1.bounties.filter(b => !session.usedBountyIds.has(b.id));
+  p2.bounties = p2.bounties.filter(b => !session.usedBountyIds.has(b.id));
+
+  // Reset per-game state (NOT refreshesUsed — that's per-set)
+  p1.selectedBounty = null;
+  p1.lockedIn = false;
+  p1.confirmedReady = false;
+  p1.gameDoneReady = false;
+
+  p2.selectedBounty = null;
+  p2.lockedIn = false;
+  p2.confirmedReady = false;
+  p2.gameDoneReady = false;
+
+  emitState(session);
+}
+
+// ── STATE EMISSION ─────────────────────────────────────────────────
+function emitState(session) {
+  const { slots, players: { player1: p1, player2: p2 } } = session;
+
+  const base = {
     sessionId: session.id,
     gameNumber: session.gameNumber,
     status: session.status,
-    adminRefreshLimit: session.adminRefreshLimit,
+    refreshLimit: session.refreshLimit,
     playerNames: session.playerNames,
     slotsOccupied: { player1: !!slots.player1, player2: !!slots.player2, admin: !!slots.admin },
     gameHistory: session.gameHistory,
+    remainingPool: BOUNTY_POOL.length - session.usedBountyIds.size,
   };
 
   if (slots.player1) {
-    const p1 = session.players.player1;
-    const p2 = session.players.player2;
-    io.to(slots.player1).emit('state', { ...baseState, role: 'player1', myBounties: p1.bounties, mySelectedBounty: p1.selectedBounty, myLockedIn: p1.lockedIn, opponentLockedIn: p2.lockedIn, refreshesUsed: p1.refreshesUsed, myNextGameReady: p1.nextGameReady, opponentNextGameReady: p2.nextGameReady, myConfirmedReady: p1.confirmedReady, myGameDoneReady: p1.gameDoneReady, opponentGameDoneReady: p2.gameDoneReady });
+    io.to(slots.player1).emit('state', {
+      ...base, role: 'player1',
+      myBounties: p1.bounties,
+      mySelectedBounty: p1.selectedBounty,
+      myLockedIn: p1.lockedIn,
+      myConfirmedReady: p1.confirmedReady,
+      myGameDoneReady: p1.gameDoneReady,
+      refreshesUsed: p1.refreshesUsed,
+      opponentLockedIn: p2.lockedIn,
+      opponentConfirmedReady: p2.confirmedReady,
+      opponentGameDoneReady: p2.gameDoneReady,
+    });
   }
   if (slots.player2) {
-    const p1 = session.players.player1;
-    const p2 = session.players.player2;
-    io.to(slots.player2).emit('state', { ...baseState, role: 'player2', myBounties: p2.bounties, mySelectedBounty: p2.selectedBounty, myLockedIn: p2.lockedIn, opponentLockedIn: p1.lockedIn, refreshesUsed: p2.refreshesUsed, myNextGameReady: p2.nextGameReady, opponentNextGameReady: p1.nextGameReady, myConfirmedReady: p2.confirmedReady, myGameDoneReady: p2.gameDoneReady, opponentGameDoneReady: p1.gameDoneReady });
+    io.to(slots.player2).emit('state', {
+      ...base, role: 'player2',
+      myBounties: p2.bounties,
+      mySelectedBounty: p2.selectedBounty,
+      myLockedIn: p2.lockedIn,
+      myConfirmedReady: p2.confirmedReady,
+      myGameDoneReady: p2.gameDoneReady,
+      refreshesUsed: p2.refreshesUsed,
+      opponentLockedIn: p1.lockedIn,
+      opponentConfirmedReady: p1.confirmedReady,
+      opponentGameDoneReady: p1.gameDoneReady,
+    });
   }
   if (slots.admin) {
-    const p1 = session.players.player1;
-    const p2 = session.players.player2;
-    io.to(slots.admin).emit('state', { ...baseState, role: 'admin', player1Bounties: p1.bounties, player2Bounties: p2.bounties, player1Selected: p1.selectedBounty, player2Selected: p2.selectedBounty, player1LockedIn: p1.lockedIn, player2LockedIn: p2.lockedIn, player1RefreshesUsed: p1.refreshesUsed, player2RefreshesUsed: p2.refreshesUsed, player1NextGameReady: p1.nextGameReady, player2NextGameReady: p2.nextGameReady, player1GameDoneReady: p1.gameDoneReady, player2GameDoneReady: p2.gameDoneReady });
+    io.to(slots.admin).emit('state', {
+      ...base, role: 'admin',
+      player1Bounties: p1.bounties,
+      player2Bounties: p2.bounties,
+      player1Selected: p1.selectedBounty,
+      player2Selected: p2.selectedBounty,
+      player1LockedIn: p1.lockedIn,
+      player2LockedIn: p2.lockedIn,
+      player1ConfirmedReady: p1.confirmedReady,
+      player2ConfirmedReady: p2.confirmedReady,
+      player1GameDoneReady: p1.gameDoneReady,
+      player2GameDoneReady: p2.gameDoneReady,
+      player1RefreshesUsed: p1.refreshesUsed,
+      player2RefreshesUsed: p2.refreshesUsed,
+    });
   }
 }
 
+// ── REST ROUTES ────────────────────────────────────────────────────
 app.post('/api/session', (req, res) => {
-  const { adminRefreshLimit } = req.body;
-  const session = createSession(adminRefreshLimit);
+  const session = createSession();
   res.json({ sessionId: session.id });
 });
 
-app.get('/api/session/:sessionId/slots', (req, res) => {
-  const session = sessions[req.params.sessionId];
-  if (!session) return res.status(404).json({ error: 'Session not found' });
-  res.json({ player1: !!session.slots.player1, player2: !!session.slots.player2, admin: !!session.slots.admin, playerNames: session.playerNames });
+app.get('/api/session/:id/slots', (req, res) => {
+  const s = sessions[req.params.id];
+  if (!s) return res.status(404).json({ error: 'Not found' });
+  res.json({
+    player1: !!s.slots.player1,
+    player2: !!s.slots.player2,
+    admin: !!s.slots.admin,
+    playerNames: s.playerNames,
+  });
 });
 
+// Admin dashboard API — password protected
+app.post('/api/admin/login', (req, res) => {
+  if (req.body.password === ADMIN_PASSWORD) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: 'Wrong password' });
+  }
+});
+
+app.get('/api/admin/sessions', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  const list = Object.values(sessions).map(s => ({
+    id: s.id,
+    playerNames: s.playerNames,
+    status: s.status,
+    gameNumber: s.gameNumber,
+    createdAt: s.createdAt,
+  }));
+  res.json(list);
+});
+
+app.get('/api/admin/settings', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ globalDefaultRefreshLimit });
+});
+
+app.post('/api/admin/settings', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  if (req.body.globalDefaultRefreshLimit !== undefined) {
+    globalDefaultRefreshLimit = Math.max(0, parseInt(req.body.globalDefaultRefreshLimit) || 0);
+  }
+  res.json({ ok: true, globalDefaultRefreshLimit });
+});
+
+// JSON export for overlay
+app.get('/api/session/:id/export', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  const s = sessions[req.params.id];
+  if (!s) return res.status(404).json({ error: 'Not found' });
+  res.json({
+    sessionId: s.id,
+    playerNames: s.playerNames,
+    gameNumber: s.gameNumber,
+    status: s.status,
+    refreshLimit: s.refreshLimit,
+    slotsOccupied: { player1: !!s.slots.player1, player2: !!s.slots.player2, admin: !!s.slots.admin },
+    player1: {
+      name: s.playerNames.player1,
+      bounties: s.players.player1.bounties,
+      selectedBounty: s.players.player1.selectedBounty,
+      lockedIn: s.players.player1.lockedIn,
+      refreshesUsed: s.players.player1.refreshesUsed,
+    },
+    player2: {
+      name: s.playerNames.player2,
+      bounties: s.players.player2.bounties,
+      selectedBounty: s.players.player2.selectedBounty,
+      lockedIn: s.players.player2.lockedIn,
+      refreshesUsed: s.players.player2.refreshesUsed,
+    },
+    gameHistory: s.gameHistory,
+    remainingPool: BOUNTY_POOL.length - s.usedBountyIds.size,
+  });
+});
+
+// Admin REST actions (used by admin dashboard page)
+app.post('/api/admin/session/:id/force-advance', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  const session = sessions[req.params.id];
+  if (!session) return res.status(404).json({ error: 'Not found' });
+  if (session.status === 'locked_in') {
+    session.status = 'in_game';
+    session.players.player1.confirmedReady = true;
+    session.players.player2.confirmedReady = true;
+    emitState(session);
+  } else if (session.status === 'in_game') {
+    advanceGame(session);
+  }
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/session/:id/reset', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  const session = sessions[req.params.id];
+  if (!session) return res.status(404).json({ error: 'Not found' });
+  session.gameNumber = 0;
+  session.status = 'waiting';
+  session.usedBountyIds = new Set();
+  session.gameHistory = [];
+  session.players.player1 = freshPlayer();
+  session.players.player2 = freshPlayer();
+  if (session.slots.player1 && session.slots.player2) startFirstGame(session);
+  else emitState(session);
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/session/:id/refresh-limit', (req, res) => {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  const session = sessions[req.params.id];
+  if (!session) return res.status(404).json({ error: 'Not found' });
+  session.refreshLimit = Math.max(0, parseInt(req.body.limit) || 0);
+  emitState(session);
+  res.json({ ok: true });
+});
+
+app.get('/overlay/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'overlay.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/join/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-function advanceGame(session) {
-  session.gameHistory.push({ game: session.gameNumber, player1: session.players.player1.selectedBounty, player2: session.players.player2.selectedBounty });
-  if (session.players.player1.selectedBounty) session.usedBountyIds.add(session.players.player1.selectedBounty.id);
-  if (session.players.player2.selectedBounty) session.usedBountyIds.add(session.players.player2.selectedBounty.id);
-  startBountyPhase(session);
-}
-
+// ── SOCKET ─────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
-  const ip = socket.handshake.address;
 
   socket.on('join', ({ sessionId, role, playerName }) => {
     const session = sessions[sessionId];
-    if (!session) return socket.emit('error', { message: 'Session not found.' });
-    if (!['player1', 'player2', 'admin'].includes(role)) return socket.emit('error', { message: 'Invalid role.' });
-    if (session.slots[role]) return socket.emit('error', { message: `That slot is already taken.` });
+    if (!session) return socket.emit('err', { msg: 'Session not found.' });
+    if (!['player1', 'player2', 'admin'].includes(role)) return socket.emit('err', { msg: 'Invalid role.' });
+    if (session.slots[role]) return socket.emit('err', { msg: 'That slot is already taken.' });
+
     session.slots[role] = socket.id;
     socket.data.sessionId = sessionId;
     socket.data.role = role;
     if (role !== 'admin') session.playerNames[role] = playerName || role;
+
     socket.join(sessionId);
     socket.emit('joined', { role, sessionId });
+
     if (session.slots.player1 && session.slots.player2 && session.status === 'waiting') {
-      startBountyPhase(session);
+      startFirstGame(session);
     } else {
-      emitSessionState(session);
+      emitState(session);
     }
   });
 
@@ -135,97 +319,100 @@ io.on('connection', (socket) => {
     const session = sessions[socket.data.sessionId];
     if (!session) return;
     const role = socket.data.role;
-    if (role !== 'player1' && role !== 'player2') return;
-    if (session.status !== 'bounty_phase') return;
+    if (!['player1','player2'].includes(role)) return;
+    if (!['bounty_phase','locked_in'].includes(session.status)) return;
     if (session.players[role].lockedIn) return;
     const bounty = session.players[role].bounties.find(b => b.id === bountyId);
     if (!bounty) return;
     session.players[role].selectedBounty = bounty;
-    emitSessionState(session);
+    emitState(session);
   });
 
   socket.on('lockIn', () => {
     const session = sessions[socket.data.sessionId];
     if (!session) return;
     const role = socket.data.role;
-    if (role !== 'player1' && role !== 'player2') return;
+    if (!['player1','player2'].includes(role)) return;
     if (session.status !== 'bounty_phase') return;
     if (!session.players[role].selectedBounty) return;
     if (session.players[role].lockedIn) return;
     session.players[role].lockedIn = true;
     if (session.players.player1.lockedIn && session.players.player2.lockedIn) session.status = 'locked_in';
-    emitSessionState(session);
+    emitState(session);
   });
 
   socket.on('unlockIn', () => {
     const session = sessions[socket.data.sessionId];
     if (!session) return;
     const role = socket.data.role;
-    if (role !== 'player1' && role !== 'player2') return;
-    if (session.status !== 'bounty_phase' && session.status !== 'locked_in') return;
+    if (!['player1','player2'].includes(role)) return;
+    // Cannot go back if already confirmed
+    if (session.players[role].confirmedReady) return;
+    if (!['bounty_phase','locked_in'].includes(session.status)) return;
     session.players[role].lockedIn = false;
     session.status = 'bounty_phase';
-    emitSessionState(session);
+    emitState(session);
+  });
+
+  socket.on('confirmReady', () => {
+    const session = sessions[socket.data.sessionId];
+    if (!session) return;
+    const role = socket.data.role;
+    if (!['player1','player2'].includes(role)) return;
+    // Can confirm as long as locked in (even if status is still bounty_phase — opponent not locked yet)
+    if (!session.players[role].lockedIn) return;
+    if (session.players[role].confirmedReady) return;
+    session.players[role].confirmedReady = true;
+    // If both confirmed, move to in_game
+    if (session.players.player1.confirmedReady && session.players.player2.confirmedReady) {
+      session.players.player1.gameDoneReady = false;
+      session.players.player2.gameDoneReady = false;
+      session.status = 'in_game';
+    }
+    emitState(session);
+  });
+
+  socket.on('gameDone', () => {
+    const session = sessions[socket.data.sessionId];
+    if (!session) return;
+    const role = socket.data.role;
+    if (!['player1','player2'].includes(role)) return;
+    if (session.status !== 'in_game') return;
+    session.players[role].gameDoneReady = true;
+    emitState(session);
+    if (session.players.player1.gameDoneReady && session.players.player2.gameDoneReady) {
+      advanceGame(session);
+    }
   });
 
   socket.on('refreshBounties', () => {
     const session = sessions[socket.data.sessionId];
     if (!session) return;
     const role = socket.data.role;
-    if (role !== 'player1' && role !== 'player2') return;
-    if (session.status !== 'bounty_phase') return;
+    if (!['player1','player2'].includes(role)) return;
+    if (!['bounty_phase','locked_in'].includes(session.status)) return;
     if (session.players[role].lockedIn) return;
     const player = session.players[role];
-    if (player.refreshesUsed >= session.adminRefreshLimit) return socket.emit('error', { message: 'No refreshes remaining.' });
+    if (player.refreshesUsed >= session.refreshLimit) return socket.emit('err', { msg: 'No refreshes remaining.' });
     const otherRole = role === 'player1' ? 'player2' : 'player1';
     const otherIds = session.players[otherRole].bounties.map(b => b.id);
-    const newBounties = drawBounties(session.usedBountyIds, 6, otherIds);
-    if (newBounties.length < 6) return socket.emit('error', { message: 'Not enough bounties in pool to refresh.' });
-    player.bounties = newBounties;
+    const fresh = drawBounties(session.usedBountyIds, 6, otherIds);
+    if (fresh.length < 6) return socket.emit('err', { msg: 'Not enough bounties remaining to refresh.' });
+    player.bounties = fresh;
     player.selectedBounty = null;
     player.refreshesUsed++;
-    emitSessionState(session);
+    emitState(session);
   });
 
-  socket.on('nextGameReady', () => {
-    const session = sessions[socket.data.sessionId];
-    if (!session) return;
-    const role = socket.data.role;
-    if (role !== 'player1' && role !== 'player2') return;
-
-    // From locked_in → confirm both players → move to 'in_game'
-    if (session.status === 'locked_in') {
-      session.players[role].confirmedReady = true;
-      if (session.players.player1.confirmedReady && session.players.player2.confirmedReady) {
-        session.players.player1.confirmedReady = false;
-        session.players.player2.confirmedReady = false;
-        session.players.player1.gameDoneReady = false;
-        session.players.player2.gameDoneReady = false;
-        session.status = 'in_game';
-      }
-      emitSessionState(session);
-      return;
-    }
-
-    // From in_game → both click game done → advance
-    if (session.status === 'in_game') {
-      session.players[role].gameDoneReady = true;
-      emitSessionState(session);
-      if (session.players.player1.gameDoneReady && session.players.player2.gameDoneReady) {
-        advanceGame(session);
-      }
-      return;
-    }
-  });
-
-  socket.on('adminAdvanceGame', () => {
+  // Admin socket actions
+  socket.on('adminForceAdvance', () => {
     const session = sessions[socket.data.sessionId];
     if (!session || socket.data.role !== 'admin') return;
     if (session.status === 'locked_in') {
-      session.players.player1.confirmedReady = false;
-      session.players.player2.confirmedReady = false;
       session.status = 'in_game';
-      emitSessionState(session);
+      session.players.player1.confirmedReady = true;
+      session.players.player2.confirmedReady = true;
+      emitState(session);
     } else if (session.status === 'in_game') {
       advanceGame(session);
     }
@@ -234,8 +421,8 @@ io.on('connection', (socket) => {
   socket.on('adminSetRefreshLimit', ({ limit }) => {
     const session = sessions[socket.data.sessionId];
     if (!session || socket.data.role !== 'admin') return;
-    session.adminRefreshLimit = Math.max(0, parseInt(limit) || 0);
-    emitSessionState(session);
+    session.refreshLimit = Math.max(0, parseInt(limit) || 0);
+    emitState(session);
   });
 
   socket.on('adminResetSession', () => {
@@ -245,19 +432,19 @@ io.on('connection', (socket) => {
     session.status = 'waiting';
     session.usedBountyIds = new Set();
     session.gameHistory = [];
-    session.players.player1 = { bounties: [], selectedBounty: null, lockedIn: false, refreshesUsed: 0, nextGameReady: false, confirmedReady: false, gameDoneReady: false };
-    session.players.player2 = { bounties: [], selectedBounty: null, lockedIn: false, refreshesUsed: 0, nextGameReady: false, confirmedReady: false, gameDoneReady: false };
-    if (session.slots.player1 && session.slots.player2) startBountyPhase(session);
-    else emitSessionState(session);
+    session.players.player1 = freshPlayer();
+    session.players.player2 = freshPlayer();
+    if (session.slots.player1 && session.slots.player2) startFirstGame(session);
+    else emitState(session);
   });
 
   socket.on('disconnect', () => {
-    const session = sessions[socket.data?.sessionId];
-    if (!session) return;
-    const role = socket.data.role;
-    if (role && session.slots[role] === socket.id) {
+    const { sessionId, role } = socket.data || {};
+    if (!sessionId || !sessions[sessionId]) return;
+    const session = sessions[sessionId];
+    if (session.slots[role] === socket.id) {
       session.slots[role] = null;
-      emitSessionState(session);
+      emitState(session);
     }
   });
 });

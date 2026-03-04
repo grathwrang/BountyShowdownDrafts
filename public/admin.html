@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Dashboard · AoE2 Bounty Draft</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --gold:#c9a84c; --gold-light:#e8c97a; --gold-dark:#8a6a1f;
+  --bg-dark:#0d0c0a; --bg-mid:#1a1710; --bg-panel:#211e14; --bg-card:#2a2618;
+  --border:#3d3520; --border-gold:#5a4a1a;
+  --text:#d4c9a0; --text-dim:#8a7e5a; --text-bright:#f0e6c0;
+  --green:#2d6a2d; --green-light:#4a9a4a;
+  --red:#8b1a1a; --dot-off:var(--border); --dot-on:var(--green-light);
+}
+body.light {
+  --gold:#8a6a1f; --gold-light:#a07820; --gold-dark:#5a4a10;
+  --bg-dark:#f5f0e8; --bg-mid:#ede8dc; --bg-panel:#e8e0d0; --bg-card:#ddd5c0;
+  --border:#c8bfa0; --border-gold:#b0a060;
+  --text:#3a3020; --text-dim:#6a6040; --text-bright:#1a1008;
+  --green:#1a5a1a; --green-light:#2a8a2a;
+}
+body.hc {
+  --gold:#fff; --gold-light:#fff; --gold-dark:#ccc;
+  --bg-dark:#000; --bg-mid:#000; --bg-panel:#111; --bg-card:#1a1a1a;
+  --border:#fff; --border-gold:#fff;
+  --text:#fff; --text-dim:#ccc; --text-bright:#fff;
+  --green:#00ff00; --green-light:#00ff00;
+  --dot-off:#555; --dot-on:#00ff00;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg-dark); color:var(--text); font-family:'Crimson Text',Georgia,serif; font-size:17px; min-height:100vh; }
+
+.theme-toggle { position:fixed; top:12px; right:14px; z-index:1000; display:flex; gap:6px; }
+.theme-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-dim); font-size:0.72rem; font-family:'Cinzel',serif; letter-spacing:0.08em; padding:5px 10px; cursor:pointer; transition:all 0.15s; text-transform:uppercase; }
+.theme-btn:hover, .theme-btn.active { border-color:var(--gold); color:var(--gold); }
+
+.header { text-align:center; padding:28px 20px 18px; border-bottom:1px solid var(--border-gold); background:linear-gradient(180deg,rgba(201,168,76,0.06) 0%,transparent 100%); }
+.header h1 { font-family:'Cinzel',serif; font-size:1.7rem; font-weight:900; color:var(--gold); letter-spacing:0.12em; }
+.header .subtitle { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.25em; margin-top:5px; }
+
+.container { max-width:1100px; margin:0 auto; padding:28px 20px; }
+
+.panel { background:var(--bg-panel); border:1px solid var(--border); padding:22px; position:relative; margin-bottom:20px; }
+.panel::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold-dark),transparent); }
+.panel-title { font-family:'Cinzel',serif; font-size:0.75rem; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:14px; }
+
+.btn-primary { background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:#0d0c0a; border:none; padding:11px 28px; font-family:'Cinzel',serif; font-size:0.82rem; font-weight:600; letter-spacing:0.12em; cursor:pointer; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); transition:all 0.2s; text-transform:uppercase; }
+.btn-primary:hover { filter:brightness(1.15); }
+.btn-secondary { background:transparent; color:var(--gold); border:1px solid var(--border-gold); padding:9px 22px; font-family:'Cinzel',serif; font-size:0.78rem; font-weight:600; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; text-transform:uppercase; }
+.btn-secondary:hover { border-color:var(--gold); background:rgba(201,168,76,0.06); }
+.btn-green { background:linear-gradient(135deg,#1a4a1a,#2d6a2d); color:#a0d4a0; border:1px solid #2d5a2d; padding:9px 22px; font-family:'Cinzel',serif; font-size:0.78rem; font-weight:600; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; text-transform:uppercase; }
+.btn-green:hover { filter:brightness(1.15); }
+.btn-danger { background:transparent; color:#c0392b; border:1px solid #5a1a1a; padding:9px 18px; font-family:'Cinzel',serif; font-size:0.72rem; cursor:pointer; transition:all 0.2s; text-transform:uppercase; }
+.btn-danger:hover { border-color:#c0392b; background:rgba(139,26,26,0.1); }
+body.hc .btn-green { background:#003300; border-color:#00ff00; color:#00ff00; }
+body.hc .btn-danger { border-color:red; color:red; }
+
+.input-group { margin-bottom:14px; }
+.input-group label { display:block; font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:5px; }
+.input-group input { width:100%; background:var(--bg-dark); border:1px solid var(--border); color:var(--text-bright); padding:9px 13px; font-family:'Crimson Text',serif; font-size:1rem; outline:none; transition:border-color 0.2s; }
+.input-group input:focus { border-color:var(--gold-dark); }
+
+.error-msg { background:rgba(139,26,26,0.18); border:1px solid #5a1a1a; color:#e07070; padding:9px 13px; font-family:'Cinzel',serif; font-size:0.7rem; margin:8px 0; }
+.info-msg { background:rgba(201,168,76,0.05); border:1px solid var(--border-gold); color:var(--text-dim); padding:9px 13px; font-size:0.82rem; margin:8px 0; }
+.tag { display:inline-block; padding:2px 7px; font-family:'Cinzel',serif; font-size:0.64rem; letter-spacing:0.1em; text-transform:uppercase; }
+.tag.green { background:rgba(45,106,45,0.2); border:1px solid #2d5a2d; color:#80c080; }
+.tag.red { background:rgba(139,26,26,0.18); border:1px solid #5a1a1a; color:#e07070; }
+.tag.yellow { background:rgba(201,168,76,0.12); border:1px solid var(--border-gold); color:var(--gold); }
+
+.flex { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.mt-8{margin-top:8px;} .mt-16{margin-top:16px;} .mt-24{margin-top:24px;}
+
+.session-row { display:grid; grid-template-columns:160px 1fr 160px 80px; gap:12px; align-items:center; padding:13px 16px; background:var(--bg-card); border:1px solid var(--border); margin-bottom:8px; cursor:pointer; transition:all 0.15s; }
+.session-row:hover { border-color:var(--gold-dark); background:rgba(201,168,76,0.04); }
+.sess-id { font-family:'Cinzel',serif; font-size:0.7rem; color:var(--text-dim); letter-spacing:0.1em; }
+.sess-players { font-family:'Cinzel',serif; font-size:0.85rem; color:var(--gold); }
+.sess-arrow { font-family:'Cinzel',serif; font-size:0.7rem; color:var(--text-dim); text-align:right; }
+
+.back-btn { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--text-dim); letter-spacing:0.15em; cursor:pointer; text-transform:uppercase; background:none; border:none; padding:0; margin-bottom:20px; display:inline-flex; align-items:center; gap:6px; }
+.back-btn:hover { color:var(--gold); }
+
+.admin-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+.pick-card { background:var(--bg-card); border:1px solid var(--border-gold); padding:14px; }
+.pick-card .pick-label { font-family:'Cinzel',serif; font-size:0.66rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; margin-bottom:8px; }
+.pick-card .pick-value { font-family:'Cinzel',serif; font-size:0.95rem; color:var(--gold); }
+.pick-card .not-picked { color:var(--text-dim); font-style:italic; font-family:'Crimson Text',serif; font-size:0.88rem; }
+.bounty-item { padding:5px 9px; font-size:0.8rem; border-left:2px solid var(--border); margin-bottom:3px; color:var(--text-dim); }
+.bounty-item.is-pick { border-left-color:var(--gold); color:var(--text-bright); background:rgba(201,168,76,0.05); }
+
+.ready-dot { display:inline-flex; align-items:center; gap:6px; font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); margin-right:14px; }
+.ready-dot .dot { width:7px; height:7px; border-radius:50%; background:var(--dot-off); transition:background 0.2s; }
+.ready-dot.is-ready .dot { background:var(--dot-on); }
+.ready-dot.is-ready { color:var(--green-light); }
+
+.history-item { display:grid; grid-template-columns:70px 1fr 1fr; gap:10px; align-items:center; padding:9px; border-bottom:1px solid var(--border); font-size:0.84rem; }
+.history-game { font-family:'Cinzel',serif; font-size:0.67rem; color:var(--text-dim); }
+.history-pick { color:var(--text); }
+.history-pick span { color:var(--gold); font-size:0.72rem; display:block; }
+
+footer { text-align:right; padding:12px 20px; font-size:0.65rem; color:var(--text-dim); border-top:1px solid var(--border); font-family:'Cinzel',serif; letter-spacing:0.1em; }
+footer a { color:var(--gold-dark); text-decoration:none; }
+footer a:hover { color:var(--gold); }
+
+@media(max-width:700px) {
+  .admin-grid { grid-template-columns:1fr; }
+  .session-row { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="theme-toggle">
+  <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+  <button class="theme-btn" id="btn-light" onclick="setTheme('light')">Light</button>
+  <button class="theme-btn" id="btn-hc" onclick="setTheme('hc')">HC</button>
+</div>
+
+<div class="header">
+  <h1>⚙ ADMIN DASHBOARD</h1>
+  <div class="subtitle">AoE2 Bounty Draft · Grathwrang Tournament Series</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-view" class="container" style="max-width:380px;">
+  <div class="panel">
+    <div class="panel-title">🔒 Admin Login</div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()" />
+    </div>
+    <div id="login-error"></div>
+    <button class="btn-primary" onclick="login()" style="width:100%">Login →</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-view" style="display:none;">
+  <div class="container">
+
+    <!-- Global Settings -->
+    <div class="panel">
+      <div class="panel-title">⚙ Global Settings</div>
+      <div class="flex">
+        <label style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--text-dim);letter-spacing:0.12em;text-transform:uppercase;">Default Refreshes Per Set</label>
+        <input type="number" id="global-refresh-limit" min="0" max="20" value="2"
+          style="width:64px;background:var(--bg-dark);border:1px solid var(--border);color:var(--text-bright);padding:7px;font-size:1rem;text-align:center;outline:none;"
+          onchange="saveGlobalSettings()" />
+        <button class="btn-secondary" onclick="loadSessions()">↺ Refresh List</button>
+        <button class="btn-primary" onclick="createAndOpenSession()">+ New Session</button>
+        <span id="settings-saved" style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--green-light);display:none;">✓ Saved</span>
+      </div>
+    </div>
+
+    <!-- Session List -->
+    <div id="view-list">
+      <div class="panel-title" style="margin-bottom:10px;">Active Sessions</div>
+      <div id="session-list-container">
+        <div style="color:var(--text-dim);font-style:italic;padding:16px 0;">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Session Detail -->
+    <div id="view-detail" style="display:none;">
+      <button class="back-btn" onclick="backToList()">← All Sessions</button>
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);letter-spacing:0.2em;margin-bottom:4px;">SESSION ID</div>
+          <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--text-dim);" id="detail-session-id"></div>
+        </div>
+        <div class="flex">
+          <span id="detail-phase-tag"></span>
+          <span style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--text-dim);">Game <span id="detail-game-num">0</span></span>
+        </div>
+      </div>
+
+      <div class="flex" style="margin-bottom:14px;font-size:0.9rem;">
+        <span>⚔ <strong id="detail-p1-name">P1</strong>: <span id="detail-p1-conn"></span></span>
+        <span style="color:var(--border);">|</span>
+        <span>🛡 <strong id="detail-p2-name">P2</strong>: <span id="detail-p2-conn"></span></span>
+        <span style="color:var(--border);">|</span>
+        <span>👁 Admin: <span id="detail-admin-conn"></span></span>
+      </div>
+
+      <!-- Controls -->
+      <div class="panel">
+        <div class="panel-title">Controls</div>
+        <div class="flex">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">Refresh Limit</label>
+            <input type="number" id="detail-refresh-limit" min="0" max="20"
+              style="width:56px;background:var(--bg-dark);border:1px solid var(--border);color:var(--text-bright);padding:5px;font-size:0.9rem;text-align:center;outline:none;"
+              onchange="setSessionRefreshLimit()" />
+          </div>
+          <button class="btn-green" id="detail-force-btn" onclick="forceAdvance()" style="display:none;">Force Advance →</button>
+          <button class="btn-danger" onclick="resetSession()">↺ Reset</button>
+          <a id="detail-open-admin-link" href="#" target="_blank">
+            <button class="btn-secondary">Open Admin View →</button>
+          </a>
+        </div>
+      </div>
+
+      <!-- Player Links -->
+      <div class="panel">
+        <div class="panel-title">🔗 Join Links</div>
+        <div style="margin-bottom:8px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);letter-spacing:0.15em;margin-bottom:5px;">PLAYER LINK</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <code id="detail-player-link" style="color:var(--gold);font-size:0.82rem;word-break:break-all;flex:1;background:var(--bg-dark);border:1px solid var(--border);padding:7px 10px;"></code>
+            <button onclick="copyPlayerLink()" style="background:none;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;font-size:0.73rem;cursor:pointer;">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Picks -->
+      <div class="panel-title" style="margin-bottom:10px;">Current Picks</div>
+      <div class="admin-grid">
+        <div class="pick-card">
+          <div class="pick-label">⚔ <span id="detail-p1-pick-name">Player 1</span> &mdash; <span id="detail-p1-lock"></span></div>
+          <div id="detail-p1-pick" style="margin:6px 0;"></div>
+          <div id="detail-p1-bounties"></div>
+          <div style="margin-top:8px;font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);">Refreshes: <span id="detail-p1-refreshes">0</span></div>
+        </div>
+        <div class="pick-card">
+          <div class="pick-label">🛡 <span id="detail-p2-pick-name">Player 2</span> &mdash; <span id="detail-p2-lock"></span></div>
+          <div id="detail-p2-pick" style="margin:6px 0;"></div>
+          <div id="detail-p2-bounties"></div>
+          <div style="margin-top:8px;font-family:'Cinzel',serif;font-size:0.65rem;color:var(--text-dim);">Refreshes: <span id="detail-p2-refreshes">0</span></div>
+        </div>
+      </div>
+
+      <div class="info-msg" id="detail-pool-status"></div>
+      <div style="margin-top:10px;">
+        <div class="ready-dot" id="detail-ready-p1"><div class="dot"></div> P1 Locked In</div>
+        <div class="ready-dot" id="detail-ready-p2"><div class="dot"></div> P2 Locked In</div>
+      </div>
+
+      <!-- Export -->
+      <div class="panel mt-24">
+        <div class="panel-title">📡 Overlay &amp; Export</div>
+        <div class="flex" style="margin-bottom:12px;">
+          <button class="btn-secondary" onclick="copyJsonUrl()">Copy JSON Endpoint</button>
+          <button class="btn-secondary" onclick="openOverlayPage()">Open Live Overlay →</button>
+          <button class="btn-secondary" onclick="downloadJson()">Download JSON Snapshot</button>
+        </div>
+        <div class="info-msg">
+          Endpoint: <code id="detail-json-url" style="color:var(--gold);font-size:0.8rem;word-break:break-all;"></code>
+        </div>
+        <div id="json-preview-wrap" style="display:none;margin-top:12px;">
+          <div class="panel-title">Preview</div>
+          <pre id="json-preview-pre" style="background:var(--bg-dark);border:1px solid var(--border);padding:14px;font-size:0.73rem;color:var(--text-dim);overflow:auto;max-height:280px;white-space:pre-wrap;word-break:break-all;"></pre>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="mt-24">
+        <div class="panel-title">Game History</div>
+        <div id="detail-history"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>Created by <strong>six_angry_geese</strong> &nbsp;·&nbsp; <a href="https://www.twitch.tv/grathwrang" target="_blank">Grathwrang</a></footer>
+
+<script>
+let currentSessionId = null;
+let pollTimer = null;
+
+// ── THEME ─────────────────────────────────────────────────────────
+function setTheme(t) {
+  document.body.classList.remove('light','hc');
+  if (t !== 'dark') document.body.classList.add(t);
+  localStorage.setItem('theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + t).classList.add('active');
+}
+setTheme(localStorage.getItem('theme') || 'dark');
+
+function el(id) { return document.getElementById(id); }
+function html(id, h) { const e = el(id); if (e) e.innerHTML = h; }
+function setReady(id, on) { const e = el(id); if (!e) return; on ? e.classList.add('is-ready') : e.classList.remove('is-ready'); }
+function adminHeaders() { return { 'Content-Type':'application/json', 'x-admin-password': sessionStorage.getItem('adminPw')||'' }; }
+
+// ── LOGIN ─────────────────────────────────────────────────────────
+async function login() {
+  const pw = el('login-password').value;
+  const res = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pw}) });
+  if (res.ok) {
+    sessionStorage.setItem('adminPw', pw);
+    showDashboard();
+  } else {
+    html('login-error','<div class="error-msg">Wrong password.</div>');
+  }
+}
+
+function showDashboard() {
+  el('login-view').style.display = 'none';
+  el('dashboard-view').style.display = 'block';
+  loadSettings();
+  loadSessions();
+}
+
+// Auto-restore session
+(async function() {
+  const pw = sessionStorage.getItem('adminPw');
+  if (!pw) return;
+  const res = await fetch('/api/admin/sessions', { headers: {'x-admin-password': pw} });
+  if (res.ok) showDashboard();
+})();
+
+// ── SETTINGS ─────────────────────────────────────────────────────
+async function loadSettings() {
+  const res = await fetch('/api/admin/settings', { headers: adminHeaders() });
+  if (!res.ok) return;
+  const d = await res.json();
+  el('global-refresh-limit').value = d.globalDefaultRefreshLimit ?? 2;
+}
+
+async function saveGlobalSettings() {
+  const limit = parseInt(el('global-refresh-limit').value) || 0;
+  await fetch('/api/admin/settings', { method:'POST', headers: adminHeaders(), body: JSON.stringify({globalDefaultRefreshLimit: limit}) });
+  const saved = el('settings-saved');
+  saved.style.display = 'inline';
+  setTimeout(() => saved.style.display = 'none', 2000);
+}
+
+// ── SESSION LIST ──────────────────────────────────────────────────
+async function loadSessions() {
+  const res = await fetch('/api/admin/sessions', { headers: adminHeaders() });
+  if (!res.ok) return;
+  const sessions = await res.json();
+  const container = el('session-list-container');
+  if (!sessions.length) {
+    container.innerHTML = '<div style="color:var(--text-dim);font-style:italic;padding:16px 0;">No active sessions. Click "+ New Session" to create one.</div>';
+    return;
+  }
+  container.innerHTML = sessions.sort((a,b) => b.createdAt - a.createdAt).map(s => {
+    const p1 = s.playerNames?.player1 || '—';
+    const p2 = s.playerNames?.player2 || '—';
+    const statusLabel = (s.status||'').replace(/_/g,' ').toUpperCase();
+    const statusClass = s.status === 'in_game' ? 'green' : 'yellow';
+    return `<div class="session-row" onclick="openSession('${s.id}')">
+      <div class="sess-id">${s.id.slice(0,8)}…</div>
+      <div class="sess-players">⚔ ${p1} vs 🛡 ${p2}</div>
+      <div><span class="tag ${statusClass}">${statusLabel}</span> · Game ${s.gameNumber}</div>
+      <div class="sess-arrow">View →</div>
+    </div>`;
+  }).join('');
+}
+
+async function createAndOpenSession() {
+  const res = await fetch('/api/session', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+  const d = await res.json();
+  await loadSessions();
+  openSession(d.sessionId);
+}
+
+// ── SESSION DETAIL ────────────────────────────────────────────────
+function openSession(id) {
+  currentSessionId = id;
+  el('view-list').style.display = 'none';
+  el('view-detail').style.display = 'block';
+  const endpoint = location.origin + '/api/session/' + id + '/export';
+  html('detail-json-url', endpoint);
+  el('detail-player-link').textContent = location.origin + '/join/' + id;
+  el('detail-open-admin-link').href = location.origin + '/join/' + id + '?role=admin';
+  clearInterval(pollTimer);
+  loadDetail();
+  pollTimer = setInterval(loadDetail, 2500);
+}
+
+function backToList() {
+  clearInterval(pollTimer);
+  currentSessionId = null;
+  el('view-list').style.display = 'block';
+  el('view-detail').style.display = 'none';
+  el('json-preview-wrap').style.display = 'none';
+  loadSessions();
+}
+
+async function loadDetail() {
+  if (!currentSessionId) return;
+  const res = await fetch('/api/session/' + currentSessionId + '/export', { headers: adminHeaders() });
+  if (!res.ok) return;
+  renderDetail(await res.json());
+}
+
+function renderDetail(s) {
+  const p1n = s.player1?.name || 'Player 1';
+  const p2n = s.player2?.name || 'Player 2';
+
+  html('detail-session-id', s.sessionId);
+  html('detail-game-num', s.gameNumber || 0);
+  html('detail-phase-tag', `<span class="tag yellow">${(s.status||'').replace(/_/g,' ').toUpperCase()}</span>`);
+
+  html('detail-p1-name', p1n); html('detail-p2-name', p2n);
+  html('detail-p1-pick-name', p1n); html('detail-p2-pick-name', p2n);
+
+  html('detail-p1-conn', s.slotsOccupied?.player1 ? '<span class="tag green">Online</span>' : '<span class="tag red">Offline</span>');
+  html('detail-p2-conn', s.slotsOccupied?.player2 ? '<span class="tag green">Online</span>' : '<span class="tag red">Offline</span>');
+  html('detail-admin-conn', s.slotsOccupied?.admin ? '<span class="tag green">Online</span>' : '<span class="tag red">Offline</span>');
+
+  html('detail-p1-pick', s.player1?.selectedBounty ? `<div class="pick-value">${s.player1.selectedBounty.title}</div>` : '<div class="not-picked">No selection</div>');
+  html('detail-p2-pick', s.player2?.selectedBounty ? `<div class="pick-value">${s.player2.selectedBounty.title}</div>` : '<div class="not-picked">No selection</div>');
+  html('detail-p1-lock', s.player1?.lockedIn ? '🔒 Locked' : 'Choosing…');
+  html('detail-p2-lock', s.player2?.lockedIn ? '🔒 Locked' : 'Choosing…');
+  html('detail-p1-refreshes', `${s.player1?.refreshesUsed||0} / ${s.refreshLimit}`);
+  html('detail-p2-refreshes', `${s.player2?.refreshesUsed||0} / ${s.refreshLimit}`);
+
+  renderBounties('detail-p1-bounties', s.player1?.bounties, s.player1?.selectedBounty);
+  renderBounties('detail-p2-bounties', s.player2?.bounties, s.player2?.selectedBounty);
+
+  html('detail-pool-status', `Global pool: ${s.remainingPool ?? '—'} remaining`);
+  setReady('detail-ready-p1', s.player1?.lockedIn);
+  setReady('detail-ready-p2', s.player2?.lockedIn);
+
+  el('detail-refresh-limit').value = s.refreshLimit || 2;
+
+  const fb = el('detail-force-btn');
+  fb.style.display = ['locked_in','in_game'].includes(s.status) ? 'inline-block' : 'none';
+  fb.textContent = s.status === 'locked_in' ? 'Force Start →' : 'Force Next Round →';
+
+  renderHistory(s.gameHistory);
+}
+
+function renderBounties(cid, bounties, pick) {
+  if (!bounties?.length) { html(cid, '<div style="color:var(--text-dim);font-size:0.8rem;font-style:italic;">No bounties yet.</div>'); return; }
+  html(cid, bounties.map(b => {
+    const hit = pick && pick.id === b.id;
+    return `<div class="bounty-item${hit?' is-pick':''}">${hit?'✦ ':''}${b.title}</div>`;
+  }).join(''));
+}
+
+function renderHistory(history) {
+  if (!history?.length) { html('detail-history', '<div style="color:var(--text-dim);font-style:italic;padding:9px 0;font-size:0.83rem;">No games yet.</div>'); return; }
+  html('detail-history', history.map(h => `
+    <div class="history-item">
+      <div class="history-game">Game ${h.game}</div>
+      <div class="history-pick"><span>⚔ P1</span>${h.player1?.title||'—'}</div>
+      <div class="history-pick"><span>🛡 P2</span>${h.player2?.title||'—'}</div>
+    </div>`).join(''));
+}
+
+// ── ADMIN REST ACTIONS ────────────────────────────────────────────
+async function forceAdvance() {
+  await fetch('/api/admin/session/' + currentSessionId + '/force-advance', { method:'POST', headers: adminHeaders() });
+  loadDetail();
+}
+
+async function resetSession() {
+  if (!confirm('Reset this session? All progress will be lost.')) return;
+  await fetch('/api/admin/session/' + currentSessionId + '/reset', { method:'POST', headers: adminHeaders() });
+  loadDetail();
+}
+
+async function setSessionRefreshLimit() {
+  const limit = parseInt(el('detail-refresh-limit').value) || 0;
+  await fetch('/api/admin/session/' + currentSessionId + '/refresh-limit', { method:'POST', headers: adminHeaders(), body: JSON.stringify({limit}) });
+}
+
+function copyPlayerLink() {
+  navigator.clipboard.writeText(location.origin + '/join/' + currentSessionId);
+}
+
+// ── EXPORT / OVERLAY ──────────────────────────────────────────────
+function copyJsonUrl() {
+  navigator.clipboard.writeText(location.origin + '/api/session/' + currentSessionId + '/export');
+}
+
+async function downloadJson() {
+  const res = await fetch('/api/session/' + currentSessionId + '/export', { headers: adminHeaders() });
+  const data = await res.json();
+  el('json-preview-wrap').style.display = 'block';
+  el('json-preview-pre').textContent = JSON.stringify(data, null, 2);
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bounty-' + currentSessionId.slice(0,8) + '.json';
+  a.click();
+}
+
+function openOverlayPage() {
+  window.open('/overlay/' + currentSessionId, '_blank', 'width=1000,height=520');
+}
+</script>
+</body>
+</html>

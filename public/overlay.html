@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Overlay · AoE2 Bounty Draft</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root { --gold:#c9a84c; --bg:#0d0c0a; --border:#5a4a1a; --text:#d4c9a0; --text-dim:#8a7e5a; --green:#4a9a4a; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Crimson Text',Georgia,serif; padding:20px; }
+.overlay-header { text-align:center; font-family:'Cinzel',serif; color:var(--gold); font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+.game-label { font-size:0.65rem; color:var(--text-dim); letter-spacing:0.15em; }
+.players { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.player-col { border:1px solid var(--border); padding:14px; background:#111008; }
+.player-name { font-family:'Cinzel',serif; color:var(--gold); font-size:0.9rem; letter-spacing:0.1em; margin-bottom:10px; border-bottom:1px solid #3d3520; padding-bottom:7px; }
+.player-status { font-family:'Cinzel',serif; font-size:0.65rem; color:var(--text-dim); letter-spacing:0.12em; margin-bottom:10px; }
+.player-status.locked { color:var(--green); }
+.bounty-row { padding:5px 8px; font-size:0.84rem; border-left:2px solid #3d3520; margin-bottom:4px; color:var(--text-dim); }
+.bounty-row.selected { border-left-color:var(--gold); color:var(--text); background:rgba(201,168,76,0.06); font-weight:600; }
+.refresh-info { margin-top:10px; font-family:'Cinzel',serif; font-size:0.62rem; color:var(--text-dim); letter-spacing:0.1em; }
+.history-section { margin-top:20px; }
+.history-title { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; margin-bottom:8px; }
+.history-row { display:grid; grid-template-columns:60px 1fr 1fr; gap:8px; padding:6px 0; border-bottom:1px solid #2a2618; font-size:0.82rem; }
+.history-game { font-family:'Cinzel',serif; font-size:0.65rem; color:var(--text-dim); }
+.status-bar { text-align:center; margin-top:16px; font-family:'Cinzel',serif; font-size:0.65rem; color:var(--text-dim); letter-spacing:0.15em; }
+.phase-label { color:var(--gold); }
+</style>
+</head>
+<body>
+<div class="overlay-header">
+  ⚔ AoE2 Bounty Draft · <span id="ov-game-label">Game 0</span> · <span class="phase-label" id="ov-phase"></span>
+</div>
+<div class="players">
+  <div class="player-col">
+    <div class="player-name" id="ov-p1-name">Player 1</div>
+    <div class="player-status" id="ov-p1-status">Choosing…</div>
+    <div id="ov-p1-bounties"></div>
+    <div class="refresh-info" id="ov-p1-refreshes"></div>
+  </div>
+  <div class="player-col">
+    <div class="player-name" id="ov-p2-name">Player 2</div>
+    <div class="player-status" id="ov-p2-status">Choosing…</div>
+    <div id="ov-p2-bounties"></div>
+    <div class="refresh-info" id="ov-p2-refreshes"></div>
+  </div>
+</div>
+<div class="history-section" id="ov-history-section" style="display:none;">
+  <div class="history-title">Previous Games</div>
+  <div id="ov-history"></div>
+</div>
+<div class="status-bar">Auto-refreshes every 3s · <span id="ov-last-update"></span></div>
+
+<script>
+const sid = location.pathname.split('/overlay/')[1];
+
+async function fetchData() {
+  try {
+    const res = await fetch('/api/session/' + sid + '/export');
+    if (!res.ok) return;
+    render(await res.json());
+  } catch(e) {}
+}
+
+function el(id) { return document.getElementById(id); }
+function html(id, h) { const e = el(id); if (e) e.innerHTML = h; }
+
+function render(s) {
+  const p1n = s.player1?.name || 'Player 1';
+  const p2n = s.player2?.name || 'Player 2';
+
+  html('ov-game-label', 'Game ' + (s.gameNumber||0));
+  html('ov-phase', (s.status||'').replace(/_/g,' ').toUpperCase());
+  html('ov-p1-name', '⚔ ' + p1n);
+  html('ov-p2-name', '🛡 ' + p2n);
+
+  const p1status = el('ov-p1-status');
+  const p2status = el('ov-p2-status');
+  p1status.textContent = s.player1?.lockedIn ? '🔒 Locked In' : 'Choosing…';
+  p1status.className = 'player-status' + (s.player1?.lockedIn ? ' locked' : '');
+  p2status.textContent = s.player2?.lockedIn ? '🔒 Locked In' : 'Choosing…';
+  p2status.className = 'player-status' + (s.player2?.lockedIn ? ' locked' : '');
+
+  renderBounties('ov-p1-bounties', s.player1?.bounties, s.player1?.selectedBounty, s.player1?.lockedIn);
+  renderBounties('ov-p2-bounties', s.player2?.bounties, s.player2?.selectedBounty, s.player2?.lockedIn);
+
+  html('ov-p1-refreshes', `Refreshes: ${s.player1?.refreshesUsed||0} / ${s.refreshLimit}`);
+  html('ov-p2-refreshes', `Refreshes: ${s.player2?.refreshesUsed||0} / ${s.refreshLimit}`);
+
+  if (s.gameHistory?.length) {
+    el('ov-history-section').style.display = 'block';
+    html('ov-history', s.gameHistory.map(h => `
+      <div class="history-row">
+        <div class="history-game">Game ${h.game}</div>
+        <div>${h.player1?.title||'—'}</div>
+        <div>${h.player2?.title||'—'}</div>
+      </div>`).join(''));
+  }
+
+  html('ov-last-update', 'Updated ' + new Date().toLocaleTimeString());
+}
+
+function renderBounties(cid, bounties, pick, locked) {
+  if (!bounties?.length) { html(cid, '<div style="color:#5a4a3a;font-style:italic;font-size:0.8rem;">No bounties</div>'); return; }
+  html(cid, bounties.map(b => {
+    const sel = pick && pick.id === b.id;
+    return `<div class="bounty-row${sel?' selected':''}">${sel && locked ? '✦ ' : ''}${b.title}</div>`;
+  }).join(''));
+}
+
+fetchData();
+setInterval(fetchData, 3000);
+</script>
+</body>
+</html>
