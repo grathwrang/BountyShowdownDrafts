@@ -1,102 +1,377 @@
 [
-  { "id": 1, "title": "Castle Rush", "description": "Build a Castle before 20 minutes" },
-  { "id": 2, "title": "Archer Flood", "description": "Train 20 Archers before the first battle" },
-  { "id": 3, "title": "Knight Charge", "description": "Have 10 Knights on the field simultaneously" },
-  { "id": 4, "title": "Wonder Builder", "description": "Start building a Wonder at any point in the game" },
-  { "id": 5, "title": "Monk Rush", "description": "Convert an enemy unit with a Monk" },
-  { "id": 6, "title": "Trebuchet Terror", "description": "Destroy 5 enemy buildings with Trebuchets" },
-  { "id": 7, "title": "Tower Drop", "description": "Build 2 towers inside enemy territory in Feudal Age" },
-  { "id": 8, "title": "Fast Imperial", "description": "Reach Imperial Age before 35 minutes" },
-  { "id": 9, "title": "Eagle Warrior Rush", "description": "Attack with 15 Eagle Warriors simultaneously" },
-  { "id": 10, "title": "Gold Hoarder", "description": "Accumulate 2000 gold at once without spending" },
-  { "id": 11, "title": "Stone Waller", "description": "Fully wall your base with Stone Walls by Feudal Age" },
-  { "id": 12, "title": "Cataphract Cavalry", "description": "Field 8 Cataphracts at once in battle" },
-  { "id": 13, "title": "Longbow Sniper", "description": "Kill 10 enemy units with Longbowmen only" },
-  { "id": 14, "title": "Fire Ship Captain", "description": "Sink 5 enemy ships with Fire Ships" },
-  { "id": 15, "title": "Scorpion Nest", "description": "Have 5 Scorpions active at the same time" },
-  { "id": 16, "title": "Paladin Parade", "description": "Successfully upgrade Knights all the way to Paladins" },
-  { "id": 17, "title": "Hussar Harass", "description": "Raid enemy economy with 10 Hussars simultaneously" },
-  { "id": 18, "title": "Bombard Breacher", "description": "Destroy a Castle with Bombard Cannons" },
-  { "id": 19, "title": "Market Mogul", "description": "Buy or sell 1000 total resources at the Market" },
-  { "id": 20, "title": "Relic Hunter", "description": "Capture 3 Relics and hold them simultaneously" },
-  { "id": 21, "title": "Boyar Charge", "description": "Field 6 Boyars simultaneously in combat" },
-  { "id": 22, "title": "Feudal Flush", "description": "Destroy an enemy building entirely in Feudal Age" },
-  { "id": 23, "title": "Camel Corps", "description": "Train 15 Camels during the game" },
-  { "id": 24, "title": "Galley Fleet", "description": "Control 8 Galleys at once on water" },
-  { "id": 25, "title": "Elephant Stampede", "description": "Field 5 War Elephants at the same time" },
-  { "id": 26, "title": "Pikeman Wall", "description": "Repel a cavalry attack using only Pikemen" },
-  { "id": 27, "title": "Mangonel Madness", "description": "Kill 20 units total with Mangonels" },
-  { "id": 28, "title": "Spy Game", "description": "Use a Spy/Treason technology during the game" },
-  { "id": 29, "title": "Villager Militia", "description": "Have 10 Villagers attack simultaneously" },
-  { "id": 30, "title": "Dark Age Aggression", "description": "Attack the enemy with units in Dark Age" },
-  { "id": 31, "title": "Heresy Punisher", "description": "Research Heresy and kill a converted unit" },
-  { "id": 32, "title": "Resource Denial", "description": "Destroy all enemy Lumber Camps" },
-  { "id": 33, "title": "Fishing Fleet", "description": "Build 10 Fishing Ships during the game" },
-  { "id": 34, "title": "Forward Castle", "description": "Build a Castle within 20 tiles of enemy Town Center" },
-  { "id": 35, "title": "Bloodlines Cavalry", "description": "Research Bloodlines and field 10 cavalry" },
-  { "id": 36, "title": "Siege Workshop Rush", "description": "Build a Siege Workshop before Castle Age" },
-  { "id": 37, "title": "Double TC", "description": "Build a second Town Center before Castle Age" },
-  { "id": 38, "title": "Crossbow Convert", "description": "Have 15 Crossbowmen in one army" },
-  { "id": 39, "title": "Town Patrol", "description": "Research Town Patrol and build 5 Guard Towers" },
-  { "id": 40, "title": "Ram Raid", "description": "Destroy enemy Town Center with Battering Rams" },
-  { "id": 41, "title": "Samurai Showdown", "description": "Field 8 Samurai simultaneously" },
-  { "id": 42, "title": "Janissary Volley", "description": "Train 10 Janissaries and attack with them" },
-  { "id": 43, "title": "War Wagon Rush", "description": "Field 6 War Wagons at once" },
-  { "id": 44, "title": "Conquistador Landing", "description": "Attack with 8 Conquistadors simultaneously" },
-  { "id": 45, "title": "Throwing Axeman", "description": "Field 10 Throwing Axemen at once" },
-  { "id": 46, "title": "Woad Raider Wave", "description": "Attack with 12 Woad Raiders" },
-  { "id": 47, "title": "Berserk Horde", "description": "Field 10 Berserks simultaneously" },
-  { "id": 48, "title": "Teutonic Terror", "description": "Field 6 Teutonic Knights at once" },
-  { "id": 49, "title": "Magyar Raider", "description": "Field 10 Magyar Huszars simultaneously" },
-  { "id": 50, "title": "Plumed Archer", "description": "Train 15 Plumed Archers during the game" },
-  { "id": 51, "title": "Genoese Crossbow", "description": "Field 10 Genoese Crossbowmen at once" },
-  { "id": 52, "title": "Condottiero Counter", "description": "Field 8 Condottieros simultaneously" },
-  { "id": 53, "title": "Camel Archer Horde", "description": "Train 12 Camel Archers during the game" },
-  { "id": 54, "title": "Shotel Warrior Blitz", "description": "Field 10 Shotel Warriors at once" },
-  { "id": 55, "title": "Gbeto Assault", "description": "Attack with 8 Gbetos simultaneously" },
-  { "id": 56, "title": "Organ Gun Barrage", "description": "Have 4 Organ Guns firing simultaneously" },
-  { "id": 57, "title": "Caravel Fleet", "description": "Build 6 Caravels during the game" },
-  { "id": 58, "title": "Leitis Charge", "description": "Field 8 Leitis in one army" },
-  { "id": 59, "title": "Steppe Lancer Rush", "description": "Attack with 10 Steppe Lancers" },
-  { "id": 60, "title": "Kipchak Volley", "description": "Train 12 Kipchaks during the game" },
-  { "id": 61, "title": "Coustillier Strike", "description": "Field 8 Coustilliers simultaneously" },
-  { "id": 62, "title": "Serjeant Defense", "description": "Have 6 Serjeants and a Donjon" },
-  { "id": 63, "title": "Flemish Militia", "description": "Convert all Villagers to Flemish Militia at once" },
-  { "id": 64, "title": "Hussite Wagon Wall", "description": "Have 5 Hussite Wagons in formation" },
-  { "id": 65, "title": "Obuch Grind", "description": "Field 10 Obuchs at once" },
-  { "id": 66, "title": "Winged Hussar Raid", "description": "Attack with 10 Winged Hussars" },
-  { "id": 67, "title": "Monastic Economy", "description": "Have 5 Monks collecting Relics simultaneously" },
-  { "id": 68, "title": "Feudal Tower Boom", "description": "Build 5 Watch Towers before Castle Age" },
-  { "id": 69, "title": "Arson Attack", "description": "Research Arson and burn down enemy buildings" },
-  { "id": 70, "title": "Sappers Strike", "description": "Research Sappers and destroy 3 buildings with villagers" },
-  { "id": 71, "title": "Herbal Medicine", "description": "Research Herbal Medicine and heal 10 units with Monks" },
-  { "id": 72, "title": "Coinage Crash", "description": "Research Coinage and buy 500 food at the Market" },
-  { "id": 73, "title": "Banking Baron", "description": "Research Banking and accumulate 3000 gold" },
-  { "id": 74, "title": "Caravan Run", "description": "Research Caravan and have 10 Trade Carts active" },
-  { "id": 75, "title": "Silk Road", "description": "Research Silk Road and generate 500 gold from trade" },
-  { "id": 76, "title": "Atheism Play", "description": "Research Atheism and deny enemy Relic gold" },
-  { "id": 77, "title": "Supremacy Villagers", "description": "Research Supremacy and kill a unit with a Villager" },
-  { "id": 78, "title": "Greek Fire", "description": "Research Greek Fire and sink 3 ships with Fire Ships" },
-  { "id": 79, "title": "Drill Sergeant", "description": "Research Drill and rush with Siege units" },
-  { "id": 80, "title": "Stirrups Charge", "description": "Research Stirrups and attack with 8 cavalry" },
-  { "id": 81, "title": "Warwolf Trebuchet", "description": "Research Warwolf and destroy a building" },
-  { "id": 82, "title": "Nomadic Boom", "description": "Destroy your TC and rebuild elsewhere on the map" },
-  { "id": 83, "title": "Lumber Camp Raid", "description": "Destroy all enemy Lumber Camps within 30 minutes" },
-  { "id": 84, "title": "Mill Burner", "description": "Destroy 3 enemy Mills" },
-  { "id": 85, "title": "Mining Camp Destruction", "description": "Destroy all enemy Mining Camps" },
-  { "id": 86, "title": "Blacksmith Blitz", "description": "Research 5 Blacksmith upgrades in one game" },
-  { "id": 87, "title": "University Scholar", "description": "Research 4 University technologies in one game" },
-  { "id": 88, "title": "Castle Defender", "description": "Garrison 20 units in your Castle" },
-  { "id": 89, "title": "Town Center Garrison", "description": "Garrison 10 units in Town Centers simultaneously" },
-  { "id": 90, "title": "Palisade Pusher", "description": "Build a complete Palisade Wall around your base" },
-  { "id": 91, "title": "Gate Crasher", "description": "Destroy 3 enemy Gates" },
-  { "id": 92, "title": "Outpost Network", "description": "Build 6 Outposts around the map" },
-  { "id": 93, "title": "Demo Ship Devastation", "description": "Sink 3 enemy ships with Demolition Ships" },
-  { "id": 94, "title": "Transport Drop", "description": "Land 10 units from Transport Ships in enemy territory" },
-  { "id": 95, "title": "Cannon Galleon", "description": "Destroy a land building with a Cannon Galleon" },
-  { "id": 96, "title": "Turtle Ship Terror", "description": "Field 3 Turtle Ships simultaneously" },
-  { "id": 97, "title": "Longboat Fleet", "description": "Build 5 Longboats during the game" },
-  { "id": 98, "title": "Dromon Strike", "description": "Use 4 Dromons to destroy enemy ships" },
-  { "id": 99, "title": "Fast Castle", "description": "Reach Castle Age before 18 minutes" },
-  { "id": 100, "title": "All In Feudal", "description": "Spend all resources on military in Feudal Age and attack" }
+  {
+    "id": 1,
+    "title": "4 Towers and a funeral",
+    "description": "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win"
+  },
+  {
+    "id": 2,
+    "title": "A Barrel of Scorpions",
+    "description": "Win with 50+ Scorpions/Heavy Scorpions alive at time of victory"
+  },
+  {
+    "id": 3,
+    "title": "A Barrel of Scorpions 2",
+    "description": "Produce only scorpions (must make at least 2) and villagers and win"
+  },
+  {
+    "id": 4,
+    "title": "A Clean Victory",
+    "description": "Win with 50+ Genitours/Elite Genitours alive at time of victory"
+  },
+  {
+    "id": 5,
+    "title": "A Real All In",
+    "description": "Delete your starting TC in Castle age + win. No Cumans and no additional TCs allowed."
+  },
+  {
+    "id": 6,
+    "title": "A Towering Achievement",
+    "description": "Win with 25 Siege towers alive at time of victory"
+  },
+  {
+    "id": 7,
+    "title": "A Wooden Economy",
+    "description": "After reaching Feudal Age villagers may only gather wood, and win"
+  },
+  {
+    "id": 8,
+    "title": "Actual Gatekeeping",
+    "description": "Every military unit must pass through the same gate (it may not be rebuilt if lost) and win"
+  },
+  {
+    "id": 9,
+    "title": "An Explosive Victory",
+    "description": "Win producing only villagers and 2 or more petards and/or 2 or more flaming camels"
+  },
+  {
+    "id": 10,
+    "title": "And My Axe",
+    "description": "Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win"
+  },
+  {
+    "id": 11,
+    "title": "Andean Revolution",
+    "description": "As Incas, build a maximum of one tower before reaching Castle Age; you may not produce anything but villagers and win."
+  },
+  {
+    "id": 12,
+    "title": "Archers Suck",
+    "description": "Win as Spanish or Bulgarians with 60 foot archers alive at time of victory"
+  },
+  {
+    "id": 13,
+    "title": "Basically a Trebuchet",
+    "description": "Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win"
+  },
+  {
+    "id": 14,
+    "title": "Basically the Huns",
+    "description": "You must not reach Feudal Age until you reach 200 pop in housing and win (no Huns)"
+  },
+  {
+    "id": 15,
+    "title": "Bounty A",
+    "description": "Win a game without building a lumbercamp (lumber camp civs only)"
+  },
+  {
+    "id": 16,
+    "title": "Bounty B",
+    "description": "Trade with enemy for a total of 500 gold and win"
+  },
+  {
+    "id": 17,
+    "title": "Bounty I",
+    "description": "Build a wall (any impassable construction) that touches both starting TCs and win"
+  },
+  {
+    "id": 18,
+    "title": "Build It Nice Build It Twice",
+    "description": "All buildings must be built touching in pairs + win"
+  },
+  {
+    "id": 19,
+    "title": "Building Are Stupid",
+    "description": "Win without any buildings alive at time of victory"
+  },
+  {
+    "id": 20,
+    "title": "Cantankerous Clergy",
+    "description": "Produce only warrior priests (must make at least 2) and villagers and win"
+  },
+  {
+    "id": 21,
+    "title": "Centers of Attention",
+    "description": "Win with 25 TCs alive or more at time of victory"
+  },
+  {
+    "id": 22,
+    "title": "Custom Renovations",
+    "description": "Replace 5 enemy buildings with your own + win"
+  },
+  {
+    "id": 23,
+    "title": "EEEEEEEEEEEEEEEEEEEEagles",
+    "description": "Kill a TC in Feudal age using only Eagles and win"
+  },
+  {
+    "id": 24,
+    "title": "F It, Make War Elephants",
+    "description": "Produce only war elephants (must make at least 2) and villagers and win"
+  },
+  {
+    "id": 25,
+    "title": "Feudal Flemish Fisticuffs",
+    "description": "Produce only Flemish militia, remain in Feudal Age and win"
+  },
+  {
+    "id": 26,
+    "title": "Feudalsphoru",
+    "description": "Make no villagers once reaching Feudal Age and win"
+  },
+  {
+    "id": 27,
+    "title": "Float Like a Butterfly",
+    "description": "Wall in an opponent's villager, win a 1v1 fight after the walls are up; your vill must be alive at time of victory and win"
+  },
+  {
+    "id": 28,
+    "title": "Garbage Garbage",
+    "description": "Produce only spears, skirms, siege units and villagers as the Turks and win"
+  },
+  {
+    "id": 29,
+    "title": "Ghost Town",
+    "description": "Delete your starting TC and rebuild it on a neutral gold/stone before Feudal and win"
+  },
+  {
+    "id": 30,
+    "title": "Greg The Builder",
+    "description": "All buildings other than farms must be built using the same villager and win"
+  },
+  {
+    "id": 31,
+    "title": "Heroic Entrance",
+    "description": "Produce a Hero as your first military unit and win"
+  },
+  {
+    "id": 32,
+    "title": "His Names Greg",
+    "description": "Entirely construct at least 1 castle with 1 villager named Greg (who survives) within line of sight of the opponent and win"
+  },
+  {
+    "id": 33,
+    "title": "Housing Crisis",
+    "description": "Produce no more than 15 villagers and win"
+  },
+  {
+    "id": 34,
+    "title": "I Draw The Line",
+    "description": "Win with a completed wall (walls and gates only) that touches parallel outsides of the map"
+  },
+  {
+    "id": 35,
+    "title": "Inclined To Build",
+    "description": "Houses may only be placed on hills or elevations and win (no Huns)"
+  },
+  {
+    "id": 36,
+    "title": "Inefficient Construction",
+    "description": "All resource camps must be built touching the wrong resource + win"
+  },
+  {
+    "id": 37,
+    "title": "Jam Your BBC In Their Base",
+    "description": "Win using only vils and BBC (must make at least 5 BBC), no Burgundians"
+  },
+  {
+    "id": 38,
+    "title": "Jeff's Strategy",
+    "description": "Collect at least 1 stone from every stone pile on the map and win"
+  },
+  {
+    "id": 39,
+    "title": "Killager",
+    "description": "Kill 3 of the opponent's units with one of your starting villagers and win"
+  },
+  {
+    "id": 40,
+    "title": "Kiss Me, I'm 30 Mangonels",
+    "description": "Have 30 Mangonels alive simultaneously at any point + win"
+  },
+  {
+    "id": 41,
+    "title": "Long Live The Warrior King",
+    "description": "Kill 5 of the opponent's units with your starting scout, keep it alive + win"
+  },
+  {
+    "id": 42,
+    "title": "Lubov's Discount Day",
+    "description": "Produce at least 50 militia in dark age and win"
+  },
+  {
+    "id": 43,
+    "title": "Militaristic Society2: Electric Boogaloo",
+    "description": "Win without any villagers alive at time of victory (No Burgundians)"
+  },
+  {
+    "id": 44,
+    "title": "My Humps My Humps My Humps",
+    "description": "Produce only camel scouts and villagers and win"
+  },
+  {
+    "id": 45,
+    "title": "No Khmercy 2",
+    "description": "Produce only Ballista Elephants and villagers and win"
+  },
+  {
+    "id": 46,
+    "title": "No Touching",
+    "description": "No structures of any kind (excluding farms) are allowed to touch + win"
+  },
+  {
+    "id": 47,
+    "title": "NonAgrarian Society",
+    "description": "Do not make any farm until imperial age and win"
+  },
+  {
+    "id": 48,
+    "title": "OK Boomer",
+    "description": "No clicking up to castle age until 100 villagers are alive and win"
+  },
+  {
+    "id": 49,
+    "title": "Only Rams",
+    "description": "Produce only rams and villagers and win"
+  },
+  {
+    "id": 50,
+    "title": "Poor City Planning",
+    "description": "Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win"
+  },
+  {
+    "id": 51,
+    "title": "Public Transportation",
+    "description": "Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win"
+  },
+  {
+    "id": 52,
+    "title": "Quartering Troops",
+    "description": "All new houses must connect directly to a military building after 6 villagers and win"
+  },
+  {
+    "id": 53,
+    "title": "Quit Milling About!",
+    "description": "The first two buildings constructed must be mills (no huns) and win"
+  },
+  {
+    "id": 54,
+    "title": "Quit touching me",
+    "description": "Build a castle that touches an opponents finished Castle and win"
+  },
+  {
+    "id": 55,
+    "title": "Religious Generosity",
+    "description": "Drop at least 3 relics within LOS of your opponent's starting TC + win"
+  },
+  {
+    "id": 56,
+    "title": "Rocket the Kasbah",
+    "description": "Produce only Rocket Carts and villagers and win"
+  },
+  {
+    "id": 57,
+    "title": "Santa's Reindeer",
+    "description": "Collect 8 deer in a single pen and win"
+  },
+  {
+    "id": 58,
+    "title": "Spelling Rocks",
+    "description": "Legibly spell your opponent's name (or grathwrang) in stone walls and win"
+  },
+  {
+    "id": 59,
+    "title": "Stop Hitting Yourself",
+    "description": "Kill at least 50 of your own units and win"
+  },
+  {
+    "id": 60,
+    "title": "Teutonic Scouting",
+    "description": "Have 50 scouts alive at time of victory as Teutons"
+  },
+  {
+    "id": 61,
+    "title": "The Cautious Shepherd",
+    "description": "Build a stone pen for your sheep, they all must survive in the pen + win"
+  },
+  {
+    "id": 62,
+    "title": "The Ents",
+    "description": "Produce only Trebuchets and villagers and win"
+  },
+  {
+    "id": 63,
+    "title": "The Friendly Stranger",
+    "description": "Build a farm in visual range of the opponent, fully farm the farm and win"
+  },
+  {
+    "id": 64,
+    "title": "The Great Caper",
+    "description": "Have 75 Teuton unique units alive at any time and win"
+  },
+  {
+    "id": 65,
+    "title": "The Hunt is On",
+    "description": "Kill 5 wolves with 1 villager, it must survive, and win (no Magyars)"
+  },
+  {
+    "id": 66,
+    "title": "The One Ring",
+    "description": "Select a villager named \"Frodo\" to touch an enemy's TC (any) and survive and win"
+  },
+  {
+    "id": 67,
+    "title": "The Stone Hydra",
+    "description": "Place 3 touching castle foundations simultaneously, complete the castles, keep them alive + win"
+  },
+  {
+    "id": 68,
+    "title": "This is Fine",
+    "description": "At least 10 of your buildings must be on fire and win"
+  },
+  {
+    "id": 69,
+    "title": "Trappers",
+    "description": "Wall at least 3 wild animals in, you must not kill them + win"
+  },
+  {
+    "id": 70,
+    "title": "Vegan Living",
+    "description": "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)"
+  },
+  {
+    "id": 71,
+    "title": "Wallflower",
+    "description": "All buildings must be on the outside edges of the map and win"
+  },
+  {
+    "id": 72,
+    "title": "We Have Huns at Home",
+    "description": "Do not produce any military until reaching 200 pop space and win"
+  },
+  {
+    "id": 73,
+    "title": "Wonderful Victory",
+    "description": "Build a wonder in line of sight of the opponent and win"
+  },
+  {
+    "id": 74,
+    "title": "Wonderwall",
+    "description": "Win with a completed wall around your starting TC that includes a wonder"
+  },
+  {
+    "id": 75,
+    "title": "Wooden Allergy",
+    "description": "Win without gathering wood"
+  }
 ]
