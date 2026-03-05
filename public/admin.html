@@ -94,10 +94,26 @@ body.hc .btn-danger { border-color:red; color:red; }
 .ready-dot.is-ready .dot { background:var(--dot-on); }
 .ready-dot.is-ready { color:var(--green-light); }
 
-.history-item { display:grid; grid-template-columns:70px 1fr 1fr; gap:10px; align-items:center; padding:9px; border-bottom:1px solid var(--border); font-size:0.84rem; }
+.history-item { border-bottom:1px solid var(--border); }
+.history-summary { display:grid; grid-template-columns:80px 1fr 1fr 28px; gap:10px; align-items:center; padding:11px 9px; cursor:pointer; transition:background 0.15s; }
+.history-summary:hover { background:rgba(201,168,76,0.04); }
 .history-game { font-family:'Cinzel',serif; font-size:0.67rem; color:var(--text-dim); }
-.history-pick { color:var(--text); }
+.history-pick { color:var(--text); font-size:0.84rem; }
 .history-pick span { color:var(--gold); font-size:0.72rem; display:block; }
+.history-toggle { color:var(--text-dim); font-size:0.8rem; font-family:'Cinzel',serif; text-align:right; transition:transform 0.2s; }
+.history-toggle.open { transform:rotate(90deg); }
+.history-detail { display:none; padding:0 9px 14px; }
+.history-detail.open { display:block; }
+.pool-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
+.pool-player { background:var(--bg-dark); border:1px solid var(--border); padding:12px; }
+.pool-player-name { font-family:'Cinzel',serif; font-size:0.65rem; color:var(--gold); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:8px; }
+.pool-snapshot { margin-bottom:10px; }
+.pool-snapshot-label { font-family:'Cinzel',serif; font-size:0.6rem; color:var(--text-dim); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:5px; border-left:2px solid var(--border-gold); padding-left:6px; }
+.pool-bounty { padding:4px 8px; font-size:0.78rem; color:var(--text-dim); border-left:2px solid transparent; margin-bottom:2px; line-height:1.3; }
+.pool-bounty.is-pick { border-left-color:var(--gold); color:var(--text-bright); background:rgba(201,168,76,0.07); font-style:normal; }
+.pool-bounty.is-pick::before { content:'✦ '; color:var(--gold); }
+.pool-meta { margin-top:8px; font-family:'Cinzel',serif; font-size:0.6rem; color:var(--text-dim); letter-spacing:0.1em; display:flex; gap:12px; flex-wrap:wrap; }
+.pool-meta span { background:var(--bg-panel); border:1px solid var(--border); padding:2px 7px; }
 
 footer { text-align:right; padding:12px 20px; font-size:0.65rem; color:var(--text-dim); border-top:1px solid var(--border); font-family:'Cinzel',serif; letter-spacing:0.1em; }
 footer a { color:var(--gold-dark); text-decoration:none; }
@@ -282,17 +298,21 @@ setTheme(localStorage.getItem('theme') || 'dark');
 function el(id) { return document.getElementById(id); }
 function html(id, h) { const e = el(id); if (e) e.innerHTML = h; }
 function setReady(id, on) { const e = el(id); if (!e) return; on ? e.classList.add('is-ready') : e.classList.remove('is-ready'); }
-function adminHeaders() { return { 'Content-Type':'application/json', 'x-admin-password': sessionStorage.getItem('adminPw')||'' }; }
+function adminHeaders() { return { 'Content-Type':'application/json', 'x-admin-token': sessionStorage.getItem('adminToken')||'' }; }
 
 // ── LOGIN ─────────────────────────────────────────────────────────
 async function login() {
   const pw = el('login-password').value;
   const res = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pw}) });
-  if (res.ok) {
-    sessionStorage.setItem('adminPw', pw);
+  const data = await res.json();
+  if (res.ok && data.token) {
+    sessionStorage.setItem('adminToken', data.token);
     showDashboard();
+  } else if (res.status === 429) {
+    html('login-error', `<div class="error-msg">${data.error}</div>`);
   } else {
-    html('login-error','<div class="error-msg">Wrong password.</div>');
+    const remaining = data.attemptsRemaining !== undefined ? ` (${data.attemptsRemaining} attempt${data.attemptsRemaining !== 1 ? 's' : ''} left)` : '';
+    html('login-error', `<div class="error-msg">Wrong password.${remaining}</div>`);
   }
 }
 
@@ -303,12 +323,13 @@ function showDashboard() {
   loadSessions();
 }
 
-// Auto-restore session
+// Auto-restore session if token still valid
 (async function() {
-  const pw = sessionStorage.getItem('adminPw');
-  if (!pw) return;
-  const res = await fetch('/api/admin/sessions', { headers: {'x-admin-password': pw} });
+  const token = sessionStorage.getItem('adminToken');
+  if (!token) return;
+  const res = await fetch('/api/admin/sessions', { headers: { 'x-admin-token': token } });
   if (res.ok) showDashboard();
+  else sessionStorage.removeItem('adminToken');
 })();
 
 // ── SETTINGS ─────────────────────────────────────────────────────
@@ -435,13 +456,80 @@ function renderBounties(cid, bounties, pick) {
 }
 
 function renderHistory(history) {
-  if (!history?.length) { html('detail-history', '<div style="color:var(--text-dim);font-style:italic;padding:9px 0;font-size:0.83rem;">No games yet.</div>'); return; }
-  html('detail-history', history.map(h => `
-    <div class="history-item">
-      <div class="history-game">Game ${h.game}</div>
-      <div class="history-pick"><span>⚔ P1</span>${h.player1?.title||'—'}</div>
-      <div class="history-pick"><span>🛡 P2</span>${h.player2?.title||'—'}</div>
-    </div>`).join(''));
+  if (!history?.length) {
+    html('detail-history', '<div style="color:var(--text-dim);font-style:italic;padding:9px 0;font-size:0.83rem;">No games yet.</div>');
+    return;
+  }
+
+  const rows = history.map(h => {
+    const detailId = `game-detail-${h.game}`;
+    const toggleId = `game-toggle-${h.game}`;
+    return `
+      <div class="history-item">
+        <div class="history-summary" onclick="toggleGameDetail(${h.game})">
+          <div class="history-game">Game ${h.game}</div>
+          <div class="history-pick"><span>⚔ ${h.player1?.title ? '' : ''}P1</span>${h.player1?.title||'—'}</div>
+          <div class="history-pick"><span>🛡 ${h.player2?.title ? '' : ''}P2</span>${h.player2?.title||'—'}</div>
+          <div class="history-toggle" id="${toggleId}">▶</div>
+        </div>
+        <div class="history-detail" id="${detailId}">
+          ${renderPoolDetail(h)}
+        </div>
+      </div>`;
+  }).join('');
+
+  html('detail-history', rows);
+}
+
+function toggleGameDetail(gameNum) {
+  const detail = document.getElementById(`game-detail-${gameNum}`);
+  const toggle = document.getElementById(`game-toggle-${gameNum}`);
+  if (!detail) return;
+  const isOpen = detail.classList.contains('open');
+  detail.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+}
+
+function renderPoolDetail(h) {
+  const p1n = h.player1Detail ? renderPlayerPool(h.player1Detail, '⚔ Player 1') : '<div style="color:var(--text-dim);font-style:italic;font-size:0.8rem;">No pool data (pre-update game)</div>';
+  const p2n = h.player2Detail ? renderPlayerPool(h.player2Detail, '🛡 Player 2') : '<div style="color:var(--text-dim);font-style:italic;font-size:0.8rem;">No pool data (pre-update game)</div>';
+  return `<div class="pool-grid">${p1n}${p2n}</div>`;
+}
+
+function renderPlayerPool(detail, playerLabel) {
+  const snapshots = detail.poolSnapshots || [];
+  const pick = detail.pick;
+
+  const snapshotHtml = snapshots.map((snap, i) => {
+    // Use lockedPool if available (has isPick flags), otherwise fall back to pool
+    const poolToShow = snap.lockedPool || snap.pool || [];
+    const isLastSnap = i === snapshots.length - 1;
+
+    const bountyRows = poolToShow.map(b => {
+      const isPick = pick && b.id === pick.id;
+      return `<div class="pool-bounty${isPick ? ' is-pick' : ''}">${b.title}</div>`;
+    }).join('');
+
+    return `
+      <div class="pool-snapshot">
+        <div class="pool-snapshot-label">${snap.label}${isLastSnap && pick ? ' · Lock-in Pool' : ''}</div>
+        ${bountyRows}
+      </div>`;
+  }).join('');
+
+  const refreshWord = detail.refreshesUsedThisRound === 1 ? 'refresh' : 'refreshes';
+  const metaHtml = `
+    <div class="pool-meta">
+      <span>Refreshes this round: ${detail.refreshesUsedThisRound}</span>
+      <span>Remaining at lock-in: ${detail.refreshesRemainingAtLockIn}</span>
+    </div>`;
+
+  return `
+    <div class="pool-player">
+      <div class="pool-player-name">${playerLabel}</div>
+      ${snapshotHtml}
+      ${metaHtml}
+    </div>`;
 }
 
 // ── ADMIN REST ACTIONS ────────────────────────────────────────────

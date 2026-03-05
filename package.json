@@ -1,18 +1,19 @@
 {
-  "name": "bounty",
+  "name": "aoe2-bounty-draft",
   "version": "1.0.0",
-  "description": "## Setup ```bash npm install npm start ``` Then open http://localhost:3000",
+  "description": "AoE2 Tournament Bounty Draft App",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "express": "^5.2.1",
-    "socket.io": "^4.8.3",
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
     "uuid": "^8.3.2"
   }
 }
+

@@ -12,8 +12,60 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const bcrypt = require('bcryptjs');
+
 const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.json')));
-const ADMIN_PASSWORD = 'passwrang321';
+
+// ── ADMIN AUTH ─────────────────────────────────────────────────────
+// Set ADMIN_PASSWORD_HASH as a Railway environment variable.
+// Generate it once by running:  node generate-hash.js
+// The plain text password is never stored anywhere — only this hash.
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH
+  || '$2a$12$u8G4rZmK3nXwP1vT9cL0OeQdF7bA2jE5hN6iM8kJ4sY3xW0pCuv2';
+
+// ── RATE LIMITING ──────────────────────────────────────────────────
+// 5 failed attempts within 60s triggers a 2 minute lockout.
+const RATE_WINDOW_MS = 60 * 1000;
+const MAX_ATTEMPTS   = 5;
+const LOCKOUT_MS     = 2 * 60 * 1000;
+const loginAttempts  = {}; // { ip: { count, windowStart, lockedUntil } }
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  if (!loginAttempts[ip]) loginAttempts[ip] = { count: 0, windowStart: now, lockedUntil: null };
+  const e = loginAttempts[ip];
+  if (e.lockedUntil && now < e.lockedUntil) {
+    const secsLeft = Math.ceil((e.lockedUntil - now) / 1000);
+    return { allowed: false, secsLeft };
+  }
+  if (now - e.windowStart > RATE_WINDOW_MS) {
+    e.count = 0; e.windowStart = now; e.lockedUntil = null;
+  }
+  return { allowed: true };
+}
+
+function recordFailedAttempt(ip) {
+  const e = loginAttempts[ip];
+  e.count++;
+  if (e.count >= MAX_ATTEMPTS) {
+    e.lockedUntil = Date.now() + LOCKOUT_MS;
+    e.count = 0; e.windowStart = Date.now();
+  }
+}
+
+function clearAttempts(ip) { delete loginAttempts[ip]; }
+
+// Clean up stale entries every 10 minutes to prevent memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const ip of Object.keys(loginAttempts)) {
+    const e = loginAttempts[ip];
+    if ((!e.lockedUntil || now > e.lockedUntil) && now - e.windowStart > RATE_WINDOW_MS) {
+      delete loginAttempts[ip];
+    }
+  }
+}, 10 * 60 * 1000);
+
 let globalDefaultRefreshLimit = 2;
 
 // ── REDIS (Upstash REST API) ───────────────────────────────────────
@@ -119,8 +171,18 @@ function freshPlayer() {
     lockedIn: false,
     confirmedReady: false,
     gameDoneReady: false,
-    refreshesUsed: 0,
+    refreshesUsed: 0,       // total across the set
+    roundRefreshesUsed: 0,  // resets each game
+    poolSnapshots: [],      // [{ pool, label }] — one per initial deal + each refresh
   };
+}
+
+// Record a pool snapshot for a player at the start of a round or after a refresh
+function addPoolSnapshot(player, label) {
+  player.poolSnapshots.push({
+    label,
+    pool: player.bounties.map(b => ({ id: b.id, title: b.title, description: b.description })),
+  });
 }
 
 function createSession() {
@@ -150,15 +212,33 @@ function startFirstGame(session) {
   const p2 = drawBounties(session.usedBountyIds, 6, p1Ids);
   session.players.player1.bounties = p1;
   session.players.player2.bounties = p2;
+  addPoolSnapshot(session.players.player1, 'Initial Pool');
+  addPoolSnapshot(session.players.player2, 'Initial Pool');
   persistSession(session);
   emitState(session);
+}
+
+function buildPlayerDetail(player, refreshLimit) {
+  return {
+    poolSnapshots: player.poolSnapshots,   // all snapshots for this round
+    pick: player.selectedBounty,
+    refreshesUsedThisRound: player.roundRefreshesUsed,
+    refreshesRemainingAtLockIn: Math.max(0, refreshLimit - player.refreshesUsed),
+  };
 }
 
 function advanceGame(session) {
   const p1 = session.players.player1;
   const p2 = session.players.player2;
 
-  session.gameHistory.push({ game: session.gameNumber, player1: p1.selectedBounty, player2: p2.selectedBounty });
+  // Capture full round detail before resetting
+  session.gameHistory.push({
+    game: session.gameNumber,
+    player1: p1.selectedBounty,
+    player2: p2.selectedBounty,
+    player1Detail: buildPlayerDetail(p1, session.refreshLimit),
+    player2Detail: buildPlayerDetail(p2, session.refreshLimit),
+  });
 
   if (p1.selectedBounty) session.usedBountyIds.add(p1.selectedBounty.id);
   if (p2.selectedBounty) session.usedBountyIds.add(p2.selectedBounty.id);
@@ -166,11 +246,19 @@ function advanceGame(session) {
   session.gameNumber++;
   session.status = 'bounty_phase';
 
+  // Pool shrinks — remove the used bounty
   p1.bounties = p1.bounties.filter(b => !session.usedBountyIds.has(b.id));
   p2.bounties = p2.bounties.filter(b => !session.usedBountyIds.has(b.id));
 
-  p1.selectedBounty = null; p1.lockedIn = false; p1.confirmedReady = false; p1.gameDoneReady = false;
-  p2.selectedBounty = null; p2.lockedIn = false; p2.confirmedReady = false; p2.gameDoneReady = false;
+  // Reset per-game state
+  p1.selectedBounty = null; p1.lockedIn = false; p1.confirmedReady = false;
+  p1.gameDoneReady = false; p1.roundRefreshesUsed = 0; p1.poolSnapshots = [];
+  p2.selectedBounty = null; p2.lockedIn = false; p2.confirmedReady = false;
+  p2.gameDoneReady = false; p2.roundRefreshesUsed = 0; p2.poolSnapshots = [];
+
+  // Snapshot the starting pool for the new round
+  addPoolSnapshot(p1, 'Initial Pool');
+  addPoolSnapshot(p2, 'Initial Pool');
 
   persistSession(session);
   emitState(session);
@@ -211,8 +299,23 @@ function exportSession(s) {
 }
 
 // ── REST ROUTES ────────────────────────────────────────────────────
+// After successful bcrypt login, we issue a session token stored in memory.
+// All subsequent admin API calls send this token in x-admin-token header.
+// Tokens expire after 24 hours and are cleared on server restart (by design).
+const adminTokens = new Set();
+const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+function issueAdminToken() {
+  const token = require('crypto').randomBytes(32).toString('hex');
+  adminTokens.add(token);
+  // Auto-expire after 24 hours
+  setTimeout(() => adminTokens.delete(token), TOKEN_EXPIRY_MS);
+  return token;
+}
+
 const requireAdmin = (req, res, next) => {
-  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  const token = req.headers['x-admin-token'];
+  if (!token || !adminTokens.has(token)) return res.status(401).json({ error: 'Unauthorized' });
   next();
 };
 
@@ -233,8 +336,33 @@ app.get('/api/session/:id/export', (req, res) => {
   res.json(exportSession(s));
 });
 
-app.post('/api/admin/login', (req, res) => {
-  res.json(req.body.password === ADMIN_PASSWORD ? { ok: true } : { error: 'Wrong password' });
+app.post('/api/admin/login', async (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+
+  // Check rate limit before doing anything
+  const rateCheck = checkRateLimit(ip);
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ error: `Too many attempts. Try again in ${rateCheck.secsLeft} seconds.`, secsLeft: rateCheck.secsLeft });
+  }
+
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Password required.' });
+
+  // bcrypt.compare — hashes the input and checks against stored hash
+  // never compares plain text, never stores plain text
+  const match = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+
+  if (!match) {
+    recordFailedAttempt(ip);
+    const e = loginAttempts[ip];
+    const remaining = Math.max(0, MAX_ATTEMPTS - (e?.count || 0));
+    return res.status(401).json({ error: 'Wrong password.', attemptsRemaining: remaining });
+  }
+
+  // Success — clear attempts and issue a session token
+  clearAttempts(ip);
+  const token = issueAdminToken();
+  res.json({ ok: true, token });
 });
 
 app.get('/api/admin/sessions', requireAdmin, (req, res) => {
@@ -341,6 +469,16 @@ io.on('connection', (socket) => {
     if (!session.players[role].selectedBounty) return;
     if (session.players[role].lockedIn) return;
     session.players[role].lockedIn = true;
+    // Update the last snapshot to mark the pick — we overwrite the label of the
+    // most recent snapshot to indicate it is the lock-in state
+    const snapshots = session.players[role].poolSnapshots;
+    if (snapshots.length > 0) {
+      const last = snapshots[snapshots.length - 1];
+      last.lockedPool = last.pool.map(b => ({
+        ...b,
+        isPick: b.id === session.players[role].selectedBounty.id,
+      }));
+    }
     if (session.players.player1.lockedIn && session.players.player2.lockedIn) session.status = 'locked_in';
     persistSession(session); emitState(session);
   });
@@ -400,6 +538,8 @@ io.on('connection', (socket) => {
     player.bounties = fresh;
     player.selectedBounty = null;
     player.refreshesUsed++;
+    player.roundRefreshesUsed++;
+    addPoolSnapshot(player, `After Refresh ${player.roundRefreshesUsed}`);
     persistSession(session); emitState(session);
   });
 
@@ -430,6 +570,7 @@ io.on('connection', (socket) => {
     session.usedBountyIds = new Set(); session.gameHistory = [];
     session.players.player1 = freshPlayer(); session.players.player2 = freshPlayer();
     persistSession(session);
+    // startFirstGame will add the initial pool snapshots
     if (session.slots.player1 && session.slots.player2) startFirstGame(session);
     else emitState(session);
   });
