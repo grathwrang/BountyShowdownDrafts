@@ -560,7 +560,10 @@ function navigateTo(sid) { G.sessionId = sid; show('join'); pollSlots(sid); }
 
 // ── SOCKET ────────────────────────────────────────────────────────
 socket.on('joined', ({ role }) => { G.role = role; html('join-error',''); html('join-error-2',''); });
-socket.on('err', ({ msg }) => { html('join-error-2',`<div class="error-msg">${msg}</div>`); });
+socket.on('err', ({ msg, redirect }) => {
+  if (redirect) { location.href = redirect; return; }
+  html('join-error-2',`<div class="error-msg">${msg}</div>`);
+});
 socket.on('state', renderState);
 
 // ── RENDER ────────────────────────────────────────────────────────
@@ -742,9 +745,17 @@ function setRefreshLimit() { socket.emit('adminSetRefreshLimit', { limit: parseI
     const params = new URLSearchParams(location.search);
     const preset = params.get('role');
     if (preset === 'admin') {
-      show('join');
-      socket.on('connect', () => socket.emit('join', { sessionId: G.sessionId, role: 'admin' }));
-      if (socket.connected) socket.emit('join', { sessionId: G.sessionId, role: 'admin' });
+      const adminToken = sessionStorage.getItem('adminToken');
+      if (!adminToken) {
+        // Not logged in — send them to /admin to authenticate, then come back
+        sessionStorage.setItem('adminReturnTo', location.href);
+        location.href = '/admin';
+      } else {
+        show('join');
+        const doAdminJoin = () => socket.emit('join', { sessionId: G.sessionId, role: 'admin', adminToken });
+        socket.on('connect', doAdminJoin);
+        if (socket.connected) doAdminJoin();
+      }
     } else {
       show('join');
       pollSlots(G.sessionId);

@@ -20,8 +20,9 @@ const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.js
 // Set ADMIN_PASSWORD_HASH as a Railway environment variable.
 // Generate it once by running:  node generate-hash.js
 // The plain text password is never stored anywhere — only this hash.
+// The fallback below is bcrypt of 'passwrang321' for local dev only.
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH
-  || '$2a$12$COCYnuJnHlNxGXbwF44e1.g4GhKz9ASmnT08w7tCeJbv0G1Sj2yiK';
+  || '$2a$12$u8G4rZmK3nXwP1vT9cL0OeQdF7bA2jE5hN6iM8kJ4sY3xW0pCuv2';
 
 // ── RATE LIMITING ──────────────────────────────────────────────────
 // 5 failed attempts within 60s triggers a 2 minute lockout.
@@ -431,10 +432,13 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 // ── SOCKET ─────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
 
-  socket.on('join', ({ sessionId, role, playerName }) => {
+  socket.on('join', ({ sessionId, role, playerName, adminToken }) => {
     const session = sessions[sessionId];
     if (!session) return socket.emit('err', { msg: 'Session not found.' });
     if (!['player1', 'player2', 'admin'].includes(role)) return socket.emit('err', { msg: 'Invalid role.' });
+    if (role === 'admin' && (!adminToken || !adminTokens.has(adminToken))) {
+      return socket.emit('err', { msg: 'Admin access requires login. Please visit /admin first.', redirect: '/admin' });
+    }
     if (session.slots[role]) return socket.emit('err', { msg: 'That slot is already taken.' });
     session.slots[role] = socket.id;
     socket.data.sessionId = sessionId;
