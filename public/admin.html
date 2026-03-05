@@ -284,6 +284,7 @@ footer a:hover { color:var(--gold); }
 <script>
 let currentSessionId = null;
 let pollTimer = null;
+const expandedGames = new Set(); // tracks which game rows are open across re-renders
 
 // ── THEME ─────────────────────────────────────────────────────────
 function setTheme(t) {
@@ -395,6 +396,7 @@ function openSession(id) {
 
 function backToList() {
   clearInterval(pollTimer);
+  expandedGames.clear();
   currentSessionId = null;
   el('view-list').style.display = 'block';
   el('view-detail').style.display = 'none';
@@ -479,6 +481,14 @@ function renderHistory(history) {
   }).join('');
 
   html('detail-history', rows);
+
+  // Re-apply open state for any games that were expanded before the re-render
+  for (const gameNum of expandedGames) {
+    const detail = document.getElementById(`game-detail-${gameNum}`);
+    const toggle = document.getElementById(`game-toggle-${gameNum}`);
+    if (detail) detail.classList.add('open');
+    if (toggle) toggle.classList.add('open');
+  }
 }
 
 function toggleGameDetail(gameNum) {
@@ -486,8 +496,15 @@ function toggleGameDetail(gameNum) {
   const toggle = document.getElementById(`game-toggle-${gameNum}`);
   if (!detail) return;
   const isOpen = detail.classList.contains('open');
-  detail.classList.toggle('open', !isOpen);
-  toggle.classList.toggle('open', !isOpen);
+  if (isOpen) {
+    expandedGames.delete(gameNum);
+    detail.classList.remove('open');
+    toggle.classList.remove('open');
+  } else {
+    expandedGames.add(gameNum);
+    detail.classList.add('open');
+    toggle.classList.add('open');
+  }
 }
 
 function renderPoolDetail(h) {
