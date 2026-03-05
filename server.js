@@ -21,7 +21,7 @@ const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.js
 // Generate it once by running:  node generate-hash.js
 // The plain text password is never stored anywhere — only this hash.
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH
-  || '$2a$12$u8G4rZmK3nXwP1vT9cL0OeQdF7bA2jE5hN6iM8kJ4sY3xW0pCuv2';
+  || '$2a$12$COCYnuJnHlNxGXbwF44e1.g4GhKz9ASmnT08w7tCeJbv0G1Sj2yiK';
 
 // ── RATE LIMITING ──────────────────────────────────────────────────
 // 5 failed attempts within 60s triggers a 2 minute lockout.
