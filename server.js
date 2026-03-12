@@ -14,7 +14,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const bcrypt = require('bcryptjs');
 
-const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.json')));
+const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.json')))
+  .map((b, idx) => {
+    const parsedLevel = parseInt(b.level, 10);
+    const level = [1, 2, 3].includes(parsedLevel) ? parsedLevel : ((idx % 3) + 1);
+    return { ...b, level };
+  });
 
 // ── ADMIN AUTH ─────────────────────────────────────────────────────
 // Set ADMIN_PASSWORD_HASH as a Railway environment variable.
@@ -162,6 +167,35 @@ async function loadFromRedis() {
 // ── HELPERS ────────────────────────────────────────────────────────
 function drawBounties(usedIds, count = 6, excludeIds = []) {
   const available = BOUNTY_POOL.filter(b => !usedIds.has(b.id) && !excludeIds.includes(b.id));
+  const perTierTarget = Math.floor(count / 3);
+
+  if (perTierTarget > 0) {
+    const byTier = { 1: [], 2: [], 3: [] };
+    available.forEach(b => {
+      if (byTier[b.level]) byTier[b.level].push(b);
+    });
+
+    const balanced = [];
+    for (const tier of [1, 2, 3]) {
+      if (byTier[tier].length < perTierTarget) {
+        return available.sort(() => Math.random() - 0.5).slice(0, count);
+      }
+      balanced.push(...byTier[tier].sort(() => Math.random() - 0.5).slice(0, perTierTarget));
+    }
+
+    const remainingSlots = count - balanced.length;
+    if (remainingSlots > 0) {
+      const pickedIds = new Set(balanced.map(b => b.id));
+      const filler = available
+        .filter(b => !pickedIds.has(b.id))
+        .sort(() => Math.random() - 0.5)
+        .slice(0, remainingSlots);
+      balanced.push(...filler);
+    }
+
+    return balanced.sort(() => Math.random() - 0.5);
+  }
+
   return available.sort(() => Math.random() - 0.5).slice(0, count);
 }
 
@@ -182,7 +216,7 @@ function freshPlayer() {
 function addPoolSnapshot(player, label) {
   player.poolSnapshots.push({
     label,
-    pool: player.bounties.map(b => ({ id: b.id, title: b.title, description: b.description })),
+    pool: player.bounties.map(b => ({ id: b.id, title: b.title, description: b.description, level: b.level })),
   });
 }
 
