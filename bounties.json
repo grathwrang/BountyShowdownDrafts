@@ -2,376 +2,613 @@
   {
     "id": 1,
     "title": "4 Towers and a funeral",
-    "description": "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win"
+    "description": "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount excluding docks) and win",
+    "points": 2
   },
   {
     "id": 2,
     "title": "A Barrel of Scorpions",
-    "description": "Win with 50+ Scorpions/Heavy Scorpions alive at time of victory"
+    "description": "Win with 20+ Scorpions/Heavy Scorpions alive at time of victory",
+    "points": 1
   },
   {
     "id": 3,
-    "title": "A Barrel of Scorpions 2",
-    "description": "Produce only scorpions (must make at least 2) and villagers and win"
+    "title": "The Scorpion King",
+    "description": "Produce only scorpions (must make at least 2) and villagers and win",
+    "points": 2
   },
   {
     "id": 4,
     "title": "A Clean Victory",
-    "description": "Win with 50+ Genitours/Elite Genitours alive at time of victory"
+    "description": "Win with 30+ Genitours/Elite Genitours alive at time of victory",
+    "points": 1
   },
   {
     "id": 5,
     "title": "A Real All In",
-    "description": "Delete your starting TC in Castle age + win. No Cumans and no additional TCs allowed."
+    "description": "Delete your starting TC in Castle age + win. No Cumans and no additional TCs allowed.",
+    "points": 2
   },
   {
     "id": 6,
     "title": "A Towering Achievement",
-    "description": "Win with 25 Siege towers alive at time of victory"
+    "description": "Win with 10 Siege towers alive at time of victory",
+    "points": 1
   },
   {
     "id": 7,
     "title": "A Wooden Economy",
-    "description": "After reaching Feudal Age villagers may only gather wood, and win"
+    "description": "After reaching Feudal Age villagers may only gather wood, and win",
+    "points": 3
   },
   {
     "id": 8,
     "title": "Actual Gatekeeping",
-    "description": "Every military unit must pass through the same gate (it may not be rebuilt if lost) and win"
+    "description": "Every military unit must pass through the same gate (it may be rebuilt on the same tiles if lost) and win",
+    "points": 2
   },
   {
     "id": 9,
     "title": "An Explosive Victory",
-    "description": "Win producing only villagers and 2 or more petards and/or 2 or more flaming camels"
+    "description": "Win producing only villagers and 2 or more petards and/or 2 or more flaming camels",
+    "points": 2
   },
   {
     "id": 10,
     "title": "And My Axe",
-    "description": "Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win"
+    "description": "Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win",
+    "points": 1
   },
   {
     "id": 11,
     "title": "Andean Revolution",
-    "description": "As Incas, build a maximum of one tower before reaching Castle Age; you may not produce anything but villagers and win."
+    "description": "As Incas, build a maximum of one tower before reaching Castle Age; you may not produce anything but villagers and win.",
+    "points": 3
   },
   {
     "id": 12,
-    "title": "Archers Suck",
-    "description": "Win as Spanish or Bulgarians with 60 foot archers alive at time of victory"
+    "title": "Archers Suck 3",
+    "description": "Win as Spanish or Bulgarians with 60 foot archers alive at time of victory",
+    "points": 3
   },
   {
     "id": 13,
     "title": "Basically a Trebuchet",
-    "description": "Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win"
+    "description": "Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win",
+    "points": 2
   },
   {
     "id": 14,
     "title": "Basically the Huns",
-    "description": "You must not reach Feudal Age until you reach 200 pop in housing and win (no Huns)"
+    "description": "You must not reach Feudal Age until you reach 200 pop in housing and win (no Huns)",
+    "points": 3
   },
   {
     "id": 15,
     "title": "Tree-hugger",
-    "description": "Win a game without building a lumbercamp (lumber camp civs only)"
+    "description": "Win a game without building a lumbercamp (lumber camp civs only)",
+    "points": 2
   },
   {
     "id": 16,
-    "title": "Traitor Trading",
-    "description": "Trade with enemy for a total of 500 gold and win"
+    "title": "Traitor Trading 2",
+    "description": "Trade with enemy for a total of 500+ gold and win",
+    "points": 2
   },
   {
     "id": 17,
     "title": "The Dumbest Wall",
-    "description": "Build a wall (any impassable construction) that touches both starting TCs and win"
+    "description": "Build a wall (any impassable construction) that touches both starting TCs and win",
+    "points": 3
   },
   {
     "id": 18,
     "title": "Build It Nice Build It Twice",
-    "description": "All buildings must be built touching in pairs + win"
+    "description": "All buildings must be built touching in pairs + win",
+    "points": 2
   },
   {
     "id": 19,
     "title": "Building Are Stupid",
-    "description": "Win without any buildings alive at time of victory"
+    "description": "Win without any buildings alive at time of victory",
+    "points": 2
   },
   {
     "id": 20,
     "title": "Cantankerous Clergy",
-    "description": "Produce only warrior priests (must make at least 2) and villagers and win"
+    "description": "Produce only warrior priests (must make at least 2) and villagers and win",
+    "points": 1
   },
   {
     "id": 21,
-    "title": "Centers of Attention",
-    "description": "Win with 25 TCs alive or more at time of victory"
+    "title": "Centers of Attention 3",
+    "description": "Win with 30 TCs alive or more at time of victory",
+    "points": 3
   },
   {
     "id": 22,
     "title": "Custom Renovations",
-    "description": "Replace 5 enemy buildings with your own + win"
+    "description": "Replace 5 enemy buildings with your own + win",
+    "points": 1
   },
   {
     "id": 23,
     "title": "EEEEEEEEEEEEEEEEEEEEagles",
-    "description": "Kill a TC in Feudal age using only Eagles and win"
+    "description": "Kill a TC in Feudal age using only Eagles and win",
+    "points": 2
   },
   {
     "id": 24,
     "title": "F It, Make War Elephants",
-    "description": "Produce only war elephants (must make at least 2) and villagers and win"
+    "description": "Produce only war elephants (must make at least 2) and villagers and win",
+    "points": 2
   },
   {
     "id": 25,
     "title": "Feudal Flemish Fisticuffs",
-    "description": "Produce only Flemish militia, remain in Feudal Age and win"
+    "description": "Produce only Flemish militia, remain in Feudal Age and win",
+    "points": 2
   },
   {
     "id": 26,
     "title": "Feudalsphoru",
-    "description": "Make no villagers once reaching Feudal Age and win"
+    "description": "Make no villagers once reaching Feudal Age and win",
+    "points": 2
   },
   {
     "id": 27,
     "title": "Float Like a Butterfly",
-    "description": "Wall in an opponent's villager, win a 1v1 fight after the walls are up; your vill must be alive at time of victory and win"
+    "description": "Wall in an opponent's villager, win a 1v1 fight after the walls are up; your vill must be alive at time of victory and win",
+    "points": 2
   },
   {
     "id": 28,
     "title": "Garbage Garbage",
-    "description": "Produce only spears, skirms, siege units and villagers as the Turks and win"
+    "description": "Produce only spears, skirms, siege units and villagers as the Turks and win",
+    "points": 2
   },
   {
     "id": 29,
     "title": "Ghost Town",
-    "description": "Delete your starting TC and rebuild it on a neutral gold/stone before Feudal and win"
+    "description": "Delete your starting TC and rebuild it on a neutral gold/stone before Feudal and win",
+    "points": 1
   },
   {
     "id": 30,
     "title": "Greg The Builder",
-    "description": "All buildings other than farms must be built using the same villager and win"
+    "description": "All buildings other than farms must be built using the same villager and win",
+    "points": 3
   },
   {
     "id": 31,
     "title": "Heroic Entrance",
-    "description": "Produce a Hero as your first military unit and win"
+    "description": "Produce a Hero as your first military unit and win",
+    "points": 2
   },
   {
     "id": 32,
-    "title": "His Names Greg",
-    "description": "Entirely construct at least 1 castle with 1 villager named Greg (who survives) within line of sight of the opponent and win"
+    "title": "His Name's Greg",
+    "description": "Entirely construct at least 1 castle with 1 villager named Greg (who survives) within line of sight of the opponent and win",
+    "points": 2
   },
   {
     "id": 33,
     "title": "Housing Crisis",
-    "description": "Produce no more than 15 villagers and win"
+    "description": "Produce no more than 15 villagers and win",
+    "points": 3
   },
   {
     "id": 34,
     "title": "I Draw The Line",
-    "description": "Win with a completed wall (walls and gates only) that touches parallel outsides of the map"
+    "description": "Win with a completed wall (walls and gates only) that touches parallel outsides of the map",
+    "points": 3
   },
   {
     "id": 35,
     "title": "Inclined To Build",
-    "description": "Houses may only be placed on hills or elevations and win (no Huns)"
+    "description": "Houses may only be placed on hills or elevations and win (no Huns)",
+    "points": 2
   },
   {
     "id": 36,
     "title": "Inefficient Construction",
-    "description": "All resource camps must be built touching the wrong resource + win"
+    "description": "All resource camps must be built touching the wrong resource + win",
+    "points": 3
   },
   {
     "id": 37,
     "title": "Jam Your BBC In Their Base",
-    "description": "Win using only vils and BBC (must make at least 5 BBC), no Burgundians"
+    "description": "Win using only vils and BBC (must make at least 2 BBC), no Burgundians",
+    "points": 2
   },
   {
     "id": 38,
     "title": "Jeff's Strategy",
-    "description": "Collect at least 1 stone from every stone pile on the map and win"
+    "description": "Collect at least 1 stone from every stone pile on the map and win",
+    "points": 1
   },
   {
     "id": 39,
     "title": "Killager",
-    "description": "Kill 3 of the opponent's units with one of your starting villagers and win"
+    "description": "Kill 3 of the opponent's units with one of your starting villagers and win",
+    "points": 3
   },
   {
     "id": 40,
-    "title": "Kiss Me, I'm 30 Mangonels",
-    "description": "Have 30 Mangonels alive simultaneously at any point + win"
+    "title": "Kiss Me, I'm 15 Mangonels",
+    "description": "Have 15 Mangonels alive simultaneously at any point + win",
+    "points": 1
   },
   {
     "id": 41,
-    "title": "Long Live The Warrior King",
-    "description": "Kill 5 of the opponent's units with your starting scout, keep it alive + win"
+    "title": "Long Live The Warrior King 3",
+    "description": "Kill 6 of the opponent's units with your starting scout, keep it alive + win",
+    "points": 3
   },
   {
     "id": 42,
-    "title": "Lubov's Discount Day",
-    "description": "Produce at least 50 militia in dark age and win"
+    "title": "Lubov's Discount Day 2",
+    "description": "Produce at least 40 militia in dark age and win",
+    "points": 2
   },
   {
     "id": 43,
     "title": "Militaristic Society2: Electric Boogaloo",
-    "description": "Win without any villagers alive at time of victory (No Burgundians)"
+    "description": "Win without any villagers alive at time of victory (No Burgundians)",
+    "points": 2
   },
   {
     "id": 44,
     "title": "My Humps My Humps My Humps",
-    "description": "Produce only camel scouts and villagers and win"
+    "description": "Produce only camel scouts and villagers and win",
+    "points": 3
   },
   {
     "id": 45,
     "title": "No Khmercy 2",
-    "description": "Produce only Ballista Elephants and villagers and win"
+    "description": "Produce only Ballista Elephants and villagers and win",
+    "points": 2
   },
   {
     "id": 46,
     "title": "No Touching",
-    "description": "No structures of any kind (excluding farms) are allowed to touch + win"
+    "description": "No structures of any kind (excluding farms) are allowed to touch + win",
+    "points": 2
   },
   {
     "id": 47,
     "title": "NonAgrarian Society",
-    "description": "Do not make any farm until imperial age and win"
+    "description": "Do not make any farm until imperial age and win",
+    "points": 2
   },
   {
     "id": 48,
     "title": "OK Boomer",
-    "description": "No clicking up to castle age until 100 villagers are alive and win"
+    "description": "No clicking up to castle age until 100 villagers are alive and win",
+    "points": 3
   },
   {
     "id": 49,
     "title": "Only Rams",
-    "description": "Produce only rams and villagers and win"
+    "description": "Produce only rams and villagers and win",
+    "points": 3
   },
   {
     "id": 50,
     "title": "Poor City Planning",
-    "description": "Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win"
+    "description": "All buildings must connect to your starting Town Center, directly or through other completed connected buildings, and win",
+    "points": 3
   },
   {
     "id": 51,
     "title": "Public Transportation",
-    "description": "Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win"
+    "description": "Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win",
+    "points": 2
   },
   {
     "id": 52,
     "title": "Quartering Troops",
-    "description": "All new houses must connect directly to a military building after 6 villagers and win"
+    "description": "All new houses must connect directly to a military building after 6 villagers and win (no huns)",
+    "points": 1
   },
   {
     "id": 53,
     "title": "Quit Milling About!",
-    "description": "The first two buildings constructed must be mills (no huns) and win"
+    "description": "The first two buildings constructed must be mills (no huns or japanese) and win",
+    "points": 1
   },
   {
     "id": 54,
     "title": "Quit touching me",
-    "description": "Build a castle that touches an opponents finished Castle and win"
+    "description": "Build a castle that touches an opponents finished Castle and win",
+    "points": 2
   },
   {
     "id": 55,
     "title": "Religious Generosity",
-    "description": "Drop at least 3 relics within LOS of your opponent's starting TC + win"
+    "description": "Drop at least 3 relics within LOS of your opponent's starting TC + win",
+    "points": 2
   },
   {
     "id": 56,
     "title": "Rocket the Kasbah",
-    "description": "Produce only Rocket Carts and villagers and win"
+    "description": "Produce only Rocket Carts and villagers and win",
+    "points": 2
   },
   {
     "id": 57,
     "title": "Santa's Reindeer",
-    "description": "Collect 8 deer in a single pen and win"
+    "description": "Collect 4 deer (or all your chickens) in a single pen (they must survive) and win",
+    "points": 1
   },
   {
     "id": 58,
     "title": "Spelling Rocks",
-    "description": "Legibly spell your opponent's name (or grathwrang) in stone walls and win"
+    "description": "Legibly spell your opponent's name (or grathwrang) in stone walls and win",
+    "points": 2
   },
   {
     "id": 59,
-    "title": "Stop Hitting Yourself",
-    "description": "Kill at least 50 of your own units and win"
+    "title": "Stop Hitting Yourself 2",
+    "description": "Kill at least 50 of your own units and win",
+    "points": 2
   },
   {
     "id": 60,
-    "title": "Teutonic Scouting",
-    "description": "Have 50 scouts alive at time of victory as Teutons"
+    "title": "Teutonic Scouting 3",
+    "description": "Have 60 scouts alive at time of victory as Teutons",
+    "points": 3
   },
   {
     "id": 61,
     "title": "The Cautious Shepherd",
-    "description": "Build a stone pen for your sheep, they all must survive in the pen + win"
+    "description": "Build a stone pen for your sheep, they all must survive in the pen + win",
+    "points": 1
   },
   {
     "id": 62,
     "title": "The Ents",
-    "description": "Produce only Trebuchets and villagers and win"
+    "description": "Produce only Trebuchets and villagers and win",
+    "points": 3
   },
   {
     "id": 63,
     "title": "The Friendly Stranger",
-    "description": "Build a farm in visual range of the opponent, fully farm the farm and win"
+    "description": "Build a farm in visual range of the opponent, fully farm the farm and win",
+    "points": 2
   },
   {
     "id": 64,
     "title": "The Great Caper",
-    "description": "Have 75 Teuton unique units alive at any time and win"
+    "description": "Have 75 Teuton unique units alive at any time and win",
+    "points": 2
   },
   {
     "id": 65,
     "title": "The Hunt is On",
-    "description": "Kill 5 wolves with 1 villager, it must survive, and win (no Magyars)"
+    "description": "Kill 4 wolves with 1 villager, it must survive, and win (no Magyars)",
+    "points": 1
   },
   {
     "id": 66,
     "title": "The One Ring",
-    "description": "Select a villager named \"Frodo\" to touch an enemy's TC (any) and survive and win"
+    "description": "Select a villager named \"Frodo\" to touch an enemy's TC (any) and survive and win",
+    "points": 2
   },
   {
     "id": 67,
     "title": "The Stone Hydra",
-    "description": "Place 3 touching castle foundations simultaneously, complete the castles, keep them alive + win"
+    "description": "Place 3 touching castle foundations simultaneously, complete the castles, keep them alive + win",
+    "points": 2
   },
   {
     "id": 68,
     "title": "This is Fine",
-    "description": "At least 10 of your buildings must be on fire and win"
+    "description": "At least 6 of your buildings must be on fire and win",
+    "points": 1
   },
   {
     "id": 69,
     "title": "Trappers",
-    "description": "Wall at least 3 wild animals in, you must not kill them + win"
+    "description": "Wall at least 3 wolf type animals in, you must not kill them + win",
+    "points": 1
   },
   {
     "id": 70,
     "title": "Vegan Living",
-    "description": "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)"
+    "description": "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)",
+    "points": 2
   },
   {
     "id": 71,
     "title": "Wallflower",
-    "description": "All buildings must be on the outside edges of the map and win"
+    "description": "All buildings must be on the outside edges of the map and win",
+    "points": 3
   },
   {
     "id": 72,
     "title": "We Have Huns at Home",
-    "description": "Do not produce any military until reaching 200 pop space and win"
+    "description": "Do not produce any military until reaching 200 pop space and win",
+    "points": 2
   },
   {
     "id": 73,
-    "title": "Wonderful Victory",
-    "description": "Build a wonder in line of sight of the opponent and win"
+    "title": "Wonderful Aggression",
+    "description": "Build a wonder in line of sight of the opponent and win",
+    "points": 3
   },
   {
     "id": 74,
     "title": "Wonderwall",
-    "description": "Win with a completed wall around your starting TC that includes a wonder"
+    "description": "Win with a completed wall around your starting TC that includes a wonder",
+    "points": 2
   },
   {
     "id": 75,
     "title": "Wooden Allergy",
-    "description": "Win without gathering wood"
+    "description": "Win without gathering wood",
+    "points": 3
+  },
+  {
+    "id": 76,
+    "title": "Scorpi-on-a-TC",
+    "description": "Kill a TC using only scorpions and win",
+    "points": 1
+  },
+  {
+    "id": 77,
+    "title": "Traitor Trading",
+    "description": "Trade with enemy for any amount of gold and win",
+    "points": 1
+  },
+  {
+    "id": 78,
+    "title": "Lazy Construction",
+    "description": "Entirely construct at least 1 castle with 1 villager and win",
+    "points": 1
+  },
+  {
+    "id": 79,
+    "title": "This is Fine 2",
+    "description": "At least 12 of your buildings must be on fire and win",
+    "points": 2
+  },
+  {
+    "id": 80,
+    "title": "This is Fine 3",
+    "description": "All of your constructions must be on fire and win",
+    "points": 3
+  },
+  {
+    "id": 81,
+    "title": "Scorpi-on-a-Castle",
+    "description": "Kill a castle using only scorpions and win",
+    "points": 3
+  },
+  {
+    "id": 82,
+    "title": "Traitor Traiding 3",
+    "description": "Trade with the enemy for a total of 1000+ gold and win",
+    "points": 3
+  },
+  {
+    "id": 83,
+    "title": "Long Live The Warrior King",
+    "description": "Kill 2 of the opponent's units with your starting scout, keep it alive + win",
+    "points": 1
+  },
+  {
+    "id": 84,
+    "title": "Long Live The Warrior King 2",
+    "description": "Kill 3 of the opponent's units with your starting scout, keep it alive + win",
+    "points": 2
+  },
+  {
+    "id": 85,
+    "title": "Centers of Attention",
+    "description": "Win with 10 TCs alive or more at time of victory",
+    "points": 1
+  },
+  {
+    "id": 86,
+    "title": "Centers of Attention 2",
+    "description": "Win with 20 TCs alive or more at time of victory",
+    "points": 2
+  },
+  {
+    "id": 87,
+    "title": "Stop Hitting Yourself 3",
+    "description": "Kill at least 100 of your own units and win",
+    "points": 3
+  },
+  {
+    "id": 88,
+    "title": "Stop Hitting Yourself",
+    "description": "Kill at least 25 of your own units and win",
+    "points": 1
+  },
+  {
+    "id": 89,
+    "title": "His Name's Greg 2",
+    "description": "Entirely construct at least 2 castles with 1 villager named Greg (who survives) within line of sight of the opponent and win",
+    "points": 3
+  },
+  {
+    "id": 90,
+    "title": "Archers Suck 2",
+    "description": "Win as Spanish or Bulgarians with 40 foot archers alive at time of victory",
+    "points": 2
+  },
+  {
+    "id": 91,
+    "title": "Archers Suck",
+    "description": "Win as Spanish or Bulgarians with 20 foot archers alive at time of victory",
+    "points": 1
+  },
+  {
+    "id": 92,
+    "title": "A Towering Achievement 2",
+    "description": "Win with 20 Siege towers alive at time of victory",
+    "points": 2
+  },
+  {
+    "id": 93,
+    "title": "A Towering Achievement 3",
+    "description": "Win with 40 Siege towers alive at time of victory",
+    "points": 3
+  },
+  {
+    "id": 94,
+    "title": "Kiss Me, I'm 30 Mangonels",
+    "description": "Have 30 Mangonels alive simultaneously at any point + win",
+    "points": 2
+  },
+  {
+    "id": 95,
+    "title": "Kiss Me, I'm 60 Mangonels",
+    "description": "Have 60 Mangonels alive simultaneously at any point + win",
+    "points": 3
+  },
+  {
+    "id": 96,
+    "title": "Lubov's Discount Day 3",
+    "description": "Produce at least 75 militia in dark age and win",
+    "points": 3
+  },
+  {
+    "id": 97,
+    "title": "Lubov's Discount Day",
+    "description": "Produce at least 20 militia in dark age and win",
+    "points": 1
+  },
+  {
+    "id": 98,
+    "title": "Wonderful Victory",
+    "description": "Begin construction on a wonder (you may not delete it) and win",
+    "points": 1
+  },
+  {
+    "id": 99,
+    "title": "Teutonic Scouting",
+    "description": "Have 20 scouts alive at time of victory as Teutons",
+    "points": 1
+  },
+  {
+    "id": 100,
+    "title": "Teutonic Scouting 2",
+    "description": "Have 40 scouts alive at time of victory as Teutons",
+    "points": 2
+  },
+  {
+    "id": 101,
+    "title": "A Barrel of Scorpions 2",
+    "description": "Win with 40+ Scorpions/Heavy Scorpions alive at time of victory",
+    "points": 2
+  },
+  {
+    "id": 102,
+    "title": "A Barrel of Scorpions 3",
+    "description": "Win with 60+ Scorpions/Heavy Scorpions alive at time of victory",
+    "points": 3
   }
 ]
