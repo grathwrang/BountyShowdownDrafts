@@ -74,7 +74,7 @@
   {
     "id": 13,
     "title": "Basically a Trebuchet",
-    "description": "Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win",
+    "description": "Kill 5 military production buildings or 1 castle or 1 TC with only villagers and win",
     "points": 2
   },
   {
@@ -109,7 +109,7 @@
   },
   {
     "id": 19,
-    "title": "Building Are Stupid",
+    "title": "Buildings Are Stupid",
     "description": "Win without any buildings alive at time of victory",
     "points": 2
   },
@@ -253,7 +253,7 @@
   },
   {
     "id": 43,
-    "title": "Militaristic Society2: Electric Boogaloo",
+    "title": "Militaristic Society 2: Electric Boogaloo",
     "description": "Win without any villagers alive at time of victory (No Burgundians)",
     "points": 2
   },
@@ -487,7 +487,7 @@
   },
   {
     "id": 82,
-    "title": "Traitor Traiding 3",
+    "title": "Traitor Trading 3",
     "description": "Trade with the enemy for a total of 1000+ gold and win",
     "points": 3
   },
