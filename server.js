@@ -21,6 +21,62 @@ const BOUNTY_POOL = JSON.parse(fs.readFileSync(path.join(__dirname, 'bounties.js
     return { ...b, level };
   });
 
+const PLAYER_ELO = {
+  'mousepuddles': 1005,
+  'dragonlord freya': 1077,
+  'jimmythicks': 1132,
+  'moon182': 1151,
+  '[swb]tralfamador': 1162,
+  'burgoman2': 1190,
+  'redneal11': 1256,
+  'tdb.daniferdoser': 1266,
+  'binny bong baron': 1287,
+  'misc_leopard': 1329,
+  'chpstkx': 1349,
+  'lefty_sexton': 1409,
+  'smarttguyy': 1517,
+  'chipmunk': 1526,
+  'dr. casă': 1550,
+  'nik_may': 1587,
+  'pl0tterghost': 1591,
+  'leviii': 1603,
+  'narutoshery': 1611,
+  'superhero55': 1635,
+  'vollkhornekeks': 1659,
+  'supermonkeycar3000': 1681,
+  'frozenflame': 1689,
+  '[dd] hellooosh': 1708,
+  'at41': 1735,
+  'not sure': 1808,
+  'gurastobbybufas vamiragodxo': 1852,
+  'maxymczech': 2007,
+  'dzedanik': 2068,
+  'oladushek': 2104,
+  'dghir | zarc': 2261,
+  'clearlove': 2306,
+  'matze': 2341,
+  'togawa sakikoi': 2368,
+  'wean dinchester': 2371,
+  'lighty': 2396,
+  'argh': 2451,
+  'kongen_42': 2460,
+  'rodrixs': 2468,
+  'duduzhu': 2532,
+  'os +| neozz': 2563,
+};
+const BOTTOM_CUTOFF_ELO = 1409;
+const TOP_CUTOFF_ELO = 2104;
+
+function normalizeName(name = '') {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function getCategoryForElo(elo) {
+  if (elo <= BOTTOM_CUTOFF_ELO) return 'bottom';
+  if (elo >= TOP_CUTOFF_ELO) return 'top';
+  return 'middle';
+}
+
 // ── ADMIN AUTH ─────────────────────────────────────────────────────
 // Set ADMIN_PASSWORD_HASH as a Railway environment variable.
 // Generate it once by running:  node generate-hash.js
@@ -165,8 +221,15 @@ async function loadFromRedis() {
 }
 
 // ── HELPERS ────────────────────────────────────────────────────────
-function drawBounties(usedIds, count = 6, excludeIds = []) {
+function drawBounties(usedIds, count = 6, excludeIds = [], options = {}) {
+  const { level3Only = false } = options;
   const available = BOUNTY_POOL.filter(b => !usedIds.has(b.id) && !excludeIds.includes(b.id));
+  if (level3Only) {
+    return available
+      .filter(b => b.level === 3)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, count);
+  }
   const perTierTarget = Math.floor(count / 3);
 
   if (perTierTarget > 0) {
@@ -227,6 +290,7 @@ function createSession() {
     refreshLimit: globalDefaultRefreshLimit,
     slots: { player1: null, player2: null, admin: null },
     playerNames: { player1: null, player2: null },
+    playerInfo: { player1: null, player2: null },
     gameNumber: 0,
     status: 'waiting',
     usedBountyIds: new Set(),
@@ -242,11 +306,22 @@ function createSession() {
 function startFirstGame(session) {
   session.gameNumber = 1;
   session.status = 'bounty_phase';
-  const p1 = drawBounties(session.usedBountyIds, 6, []);
+  const p1Higher = session.playerInfo.player1?.isHigherCategory === true;
+  const p2Higher = session.playerInfo.player2?.isHigherCategory === true;
+  const p1 = drawBounties(session.usedBountyIds, 6, [], { level3Only: p1Higher });
   const p1Ids = p1.map(b => b.id);
-  const p2 = drawBounties(session.usedBountyIds, 6, p1Ids);
-  session.players.player1.bounties = p1;
-  session.players.player2.bounties = p2;
+  const p2 = drawBounties(session.usedBountyIds, 6, p1Ids, { level3Only: p2Higher });
+  if (p1.length < 6 || p2.length < 6) {
+    // Fallback safety in case level-3 pool is exhausted.
+    const safeP1 = p1.length < 6 ? drawBounties(session.usedBountyIds, 6, []) : p1;
+    const safeP1Ids = safeP1.map(b => b.id);
+    const safeP2 = p2.length < 6 ? drawBounties(session.usedBountyIds, 6, safeP1Ids) : p2;
+    session.players.player1.bounties = safeP1;
+    session.players.player2.bounties = safeP2;
+  } else {
+    session.players.player1.bounties = p1;
+    session.players.player2.bounties = p2;
+  }
   addPoolSnapshot(session.players.player1, 'Initial Pool');
   addPoolSnapshot(session.players.player2, 'Initial Pool');
   persistSession(session);
@@ -308,6 +383,7 @@ function emitState(session) {
     status: session.status,
     refreshLimit: session.refreshLimit,
     playerNames: session.playerNames,
+    playerInfo: session.playerInfo,
     slotsOccupied: { player1: !!slots.player1, player2: !!slots.player2, admin: !!slots.admin },
     gameHistory: session.gameHistory,
     remainingPool: BOUNTY_POOL.length - session.usedBountyIds.size,
@@ -466,7 +542,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 // ── SOCKET ─────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
 
-  socket.on('join', ({ sessionId, role, playerName, adminToken }) => {
+  socket.on('join', ({ sessionId, role, playerName, adminToken, manualElo }) => {
     const session = sessions[sessionId];
     if (!session) return socket.emit('err', { msg: 'Session not found.' });
     if (!['player1', 'player2', 'admin'].includes(role)) return socket.emit('err', { msg: 'Invalid role.' });
@@ -474,10 +550,38 @@ io.on('connection', (socket) => {
       return socket.emit('err', { msg: 'Admin access requires login. Please visit /admin first.', redirect: '/admin' });
     }
     if (session.slots[role]) return socket.emit('err', { msg: 'That slot is already taken.' });
+    if (role !== 'admin' && !playerName?.trim()) return socket.emit('err', { msg: 'Player name is required.' });
     session.slots[role] = socket.id;
     socket.data.sessionId = sessionId;
     socket.data.role = role;
-    if (role !== 'admin') session.playerNames[role] = playerName || role;
+    if (role !== 'admin') {
+      const normalized = normalizeName(playerName);
+      const lookupElo = PLAYER_ELO[normalized];
+      const resolvedManualElo = parseInt(manualElo, 10);
+      let resolvedElo = lookupElo;
+      if (!resolvedElo && Number.isFinite(resolvedManualElo) && resolvedManualElo > 0) resolvedElo = resolvedManualElo;
+      if (!resolvedElo) {
+        session.slots[role] = null;
+        socket.data.sessionId = null;
+        socket.data.role = null;
+        return socket.emit('err', { msg: 'Could not auto-find ELO for that name. Please enter your ELO.', requireManualElo: true });
+      }
+      session.playerNames[role] = playerName.trim();
+      session.playerInfo[role] = {
+        elo: resolvedElo,
+        category: getCategoryForElo(resolvedElo),
+      };
+      const p1c = session.playerInfo.player1?.category;
+      const p2c = session.playerInfo.player2?.category;
+      const rank = { bottom: 0, middle: 1, top: 2 };
+      if (p1c && p2c && p1c !== p2c) {
+        session.playerInfo.player1.isHigherCategory = rank[p1c] > rank[p2c];
+        session.playerInfo.player2.isHigherCategory = rank[p2c] > rank[p1c];
+      } else {
+        if (session.playerInfo.player1) session.playerInfo.player1.isHigherCategory = false;
+        if (session.playerInfo.player2) session.playerInfo.player2.isHigherCategory = false;
+      }
+    }
     socket.join(sessionId);
     socket.emit('joined', { role, sessionId });
     persistSession(session);
@@ -571,7 +675,9 @@ io.on('connection', (socket) => {
     if (player.refreshesUsed >= session.refreshLimit) return socket.emit('err', { msg: 'No refreshes remaining.' });
     const otherRole = role === 'player1' ? 'player2' : 'player1';
     const otherIds = session.players[otherRole].bounties.map(b => b.id);
-    const fresh = drawBounties(session.usedBountyIds, 6, otherIds);
+    const fresh = drawBounties(session.usedBountyIds, 6, otherIds, {
+      level3Only: session.playerInfo[role]?.isHigherCategory === true,
+    });
     if (fresh.length < 6) return socket.emit('err', { msg: 'Not enough bounties remaining to refresh.' });
     player.bounties = fresh;
     player.selectedBounty = null;

@@ -479,7 +479,7 @@ footer a:hover { color:var(--gold); }
 
 <script>
 const socket = io();
-const G = { sessionId: null, role: null, createdId: null };
+const G = { sessionId: null, role: null, createdId: null, pendingRole: null };
 
 // ── THEME ─────────────────────────────────────────────────────────
 function setTheme(t) {
@@ -555,6 +555,9 @@ function selectSlot(role) {
     el('player-name-input').focus();
     return;
   }
+  G.pendingRole = role;
+  ['player1', 'player2', 'admin'].forEach(r => el('slot-' + r)?.classList.remove('selected'));
+  el('slot-' + role)?.classList.add('selected');
   clearInterval(pollTimer);
   socket.emit('join', { sessionId: G.sessionId, role, playerName: name || '' });
 }
@@ -563,8 +566,17 @@ function navigateTo(sid) { G.sessionId = sid; show('join'); pollSlots(sid); }
 
 // ── SOCKET ────────────────────────────────────────────────────────
 socket.on('joined', ({ role }) => { G.role = role; html('join-error',''); html('join-error-2',''); });
-socket.on('err', ({ msg, redirect }) => {
+socket.on('err', ({ msg, redirect, requireManualElo }) => {
   if (redirect) { location.href = redirect; return; }
+  if (requireManualElo && G.sessionId && G.role !== 'admin') {
+    const name = el('player-name-input')?.value?.trim();
+    const entered = prompt(`Could not auto-find ELO for "${name}". Please enter your ELO:`);
+    const manualElo = parseInt(entered || '', 10);
+    if (Number.isFinite(manualElo) && manualElo > 0) {
+      socket.emit('join', { sessionId: G.sessionId, role: G.pendingRole || 'player1', playerName: name || '', manualElo });
+      return;
+    }
+  }
   html('join-error-2',`<div class="error-msg">${msg}</div>`);
 });
 socket.on('state', renderState);
