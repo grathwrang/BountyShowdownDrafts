@@ -57,6 +57,9 @@ body { background:var(--bg-dark); color:var(--text); font-family:'Crimson Text',
 .header .subtitle { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.25em; margin-top:5px; }
 .header .subtitle a { color:var(--gold-dark); text-decoration:none; }
 .header .subtitle a:hover { color:var(--gold); }
+.top-nav { margin-top:12px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+.top-nav-link { color:var(--gold); border:1px solid var(--border-gold); padding:6px 12px; text-decoration:none; font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; transition:all 0.15s; }
+.top-nav-link:hover { background:rgba(201,168,76,0.08); border-color:var(--gold); }
 
 .screen { display:none; padding:28px 20px; max-width:900px; margin:0 auto; }
 .screen.active { display:block; }
@@ -199,6 +202,10 @@ footer a:hover { color:var(--gold); }
   <div class="header">
     <h1><a href="/" style="color:inherit;text-decoration:none;">⚔ BOUNTY DRAFT ⚔</a></h1>
     <div class="subtitle">Age of Empires II · <a href="https://www.twitch.tv/grathwrang" target="_blank">Grathwrang Tournament Series</a></div>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a class="top-nav-link" href="/BountySchedule.html">Bounty Schedule</a>
+      <a class="top-nav-link" href="/BountyRankings.html">Bounty Rankings</a>
+    </nav>
   </div>
 
   <!-- LANDING -->
