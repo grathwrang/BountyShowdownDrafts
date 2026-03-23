@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bounty Rankings Overlay</title>
+  <style>
+    :root {
+      --bg: rgba(31, 18, 10, 0.82);
+      --panel: rgba(72, 44, 25, 0.92);
+      --line: rgba(228, 191, 124, 0.55);
+      --gold: #f0c87a;
+      --paper: #f6e2b8;
+      --dust: #d9b274;
+      --shadow: rgba(0,0,0,0.45);
+      --good: #92d07f;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--paper);
+    }
+
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 24px;
+    }
+
+    .overlay {
+      width: 980px;
+      background:
+        radial-gradient(circle at top, rgba(255, 215, 140, 0.09), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)),
+        var(--bg);
+      border: 2px solid var(--gold);
+      border-radius: 18px;
+      box-shadow: 0 18px 40px var(--shadow);
+      backdrop-filter: blur(4px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overlay::before,
+    .overlay::after {
+      content: "";
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.45;
+    }
+    .overlay::before { top: 72px; }
+    .overlay::after { bottom: 58px; }
+
+    .header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,222,173,0.07), rgba(0,0,0,0));
+    }
+
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.22em;
+      color: var(--dust);
+      opacity: 0.9;
+    }
+
+    .title {
+      font-size: 38px;
+      line-height: 0.95;
+      margin: 0;
+      color: var(--gold);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.28);
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 14px;
+      color: var(--paper);
+      opacity: 0.9;
+    }
+
+    .table-head, .row {
+      display: grid;
+      grid-template-columns: 70px 3.1fr 110px 120px 120px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 20px;
+    }
+
+    .table-head {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--dust);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .rows {
+      padding: 8px 0 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 790px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(240, 200, 122, 0.55) rgba(0,0,0,0.12);
+    }
+
+    .rows::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .rows::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.12);
+      border-radius: 999px;
+    }
+
+    .rows::-webkit-scrollbar-thumb {
+      background: rgba(240, 200, 122, 0.55);
+      border-radius: 999px;
+      border: 2px solid rgba(0,0,0,0.1);
+    }
+
+    .row {
+      margin: 0 12px;
+      border: 1px solid rgba(240, 200, 122, 0.16);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(125, 81, 44, 0.2), rgba(30, 18, 10, 0.22));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+
+    .row.top4 {
+      background: linear-gradient(180deg, rgba(247, 227, 187, 0.96), rgba(225, 192, 130, 0.92));
+      border-color: rgba(255, 234, 191, 0.95);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 1px rgba(80, 42, 18, 0.12);
+    }
+
+    .row.top4 .rank,
+    .row.top4 .cell,
+    .row.top4 .player-name {
+      color: #4c2d17;
+      text-shadow: none;
+    }
+
+    .row.top4 .cell.points,
+    .row.top4 .player-name:hover,
+    .row.top4 .player-name:focus-visible {
+      color: #7a4318;
+    }
+
+    .row.first-place {
+      border-color: rgba(255, 232, 176, 0.98);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.38),
+        0 0 0 2px rgba(255, 218, 120, 0.5),
+        0 0 28px rgba(240, 200, 122, 0.18);
+    }
+
+    .rank {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: var(--gold);
+      font-size: 22px;
+    }
+
+    .rank-prefix {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .rank-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      line-height: 1;
+    }
+
+    .row.first-place .rank-value {
+      background: linear-gradient(180deg, rgba(122, 67, 24, 0.96), rgba(76, 45, 23, 0.96));
+      border: 1px solid rgba(255, 235, 187, 0.9);
+      color: var(--paper);
+      box-shadow: 0 0 0 2px rgba(255, 215, 120, 0.3);
+    }
+
+    .player {
+      min-width: 0;
+    }
+
+    .player-name {
+      display: inline-block;
+      max-width: 100%;
+      font-size: 24px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--paper);
+      text-decoration: none;
+    }
+
+    .player-name:hover,
+    .player-name:focus-visible {
+      color: var(--gold);
+      text-decoration: underline;
+    }
+
+    .cell {
+      text-align: center;
+      font-size: 22px;
+      color: var(--paper);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cell.points {
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 28px;
+    }
+
+    .cell.record {
+      font-size: 18px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px 14px;
+      border-top: 1px solid var(--line);
+      color: var(--dust);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .status.ok { color: var(--good); }
+    .status.err { color: #ff9c88; }
+
+    .loading, .empty {
+      padding: 26px 20px 32px;
+      text-align: center;
+      color: var(--dust);
+      font-size: 18px;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      .overlay { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="header">
+      <div class="title-wrap">
+        <div class="eyebrow">Showdown Cup</div>
+        <h1 class="title">Bounty Board</h1>
+        <p class="subtitle">Group stage standings sorted by points</p>
+      </div>
+    </div>
+
+    <div class="table-head">
+      <div>Rank</div>
+      <div>Gunslinger</div>
+      <div>Points</div>
+      <div>Record</div>
+      <div>Elo High</div>
+    </div>
+
+    <div id="rows" class="rows">
+      <div class="loading">Loading bounty board…</div>
+    </div>
+
+    <div class="footer">
+      <div id="sourceLabel">Source: Google Sheets</div>
+      <div id="status" class="status">Connecting…</div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      sheetId: '17izLtyOLMWXtNpsOmDz4kCManSt6dg1KYrnsV9R4Uus',
+      gid: '0',
+      refreshMs: 15000,
+      title: 'Bounty Board',
+      subtitle: 'Group stage standings sorted by points',
+      sourceName: 'Showdown Cup Group Stage',
+      columns: {
+        player: ['player', 'name'],
+        points: ['points', 'pts'],
+        record: ['record', 'w-l', 'w/l'],
+        highElo: ['all time high elo', 'high elo', 'elo'],
+        profile: ['profile', 'link', 'url']
+      }
+    };
+
+    const rowsEl = document.getElementById('rows');
+    const statusEl = document.getElementById('status');
+    document.querySelector('.title').textContent = CONFIG.title;
+    document.querySelector('.subtitle').textContent = CONFIG.subtitle;
+    document.getElementById('sourceLabel').textContent = `Source: ${CONFIG.sourceName}`;
+
+    let activeScript = null;
+
+    function gvizUrl() {
+      const tqx = encodeURIComponent('out:json;responseHandler:handleSheetResponse');
+      return `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?gid=${CONFIG.gid}&headers=1&tqx=${tqx}`;
+    }
+
+    function normalizeHeader(h) {
+      return String(h || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ');
+    }
+
+    function findColumnIndex(headers, aliases) {
+      const normalized = headers.map(normalizeHeader);
+      for (const alias of aliases) {
+        const idx = normalized.indexOf(normalizeHeader(alias));
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    }
+
+    function toNumber(value) {
+      if (value == null) return 0;
+      const cleaned = String(value).replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+      return cleaned ? Number(cleaned[0]) : 0;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeProfileUrl(url) {
+      const raw = String(url || '').trim();
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^www\./i.test(raw)) return `https://${raw}`;
+      return `https://${raw}`;
+    }
+
+    function render(data) {
+      if (!data.length) {
+        rowsEl.innerHTML = '<div class="empty">No standings rows found.</div>';
+        return;
+      }
+
+      rowsEl.innerHTML = data.map((item, i) => {
+        const playerName = escapeHtml(item.player);
+        const profileUrl = safeProfileUrl(item.profile);
+        const playerMarkup = profileUrl
+          ? `<a class="player-name" href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer">${playerName}</a>`
+          : `<span class="player-name">${playerName}</span>`;
+
+        return `
+          <div class="row ${i < 4 ? 'top4' : ''} ${i === 0 ? 'first-place' : ''}">
+            <div class="rank"><span class="rank-prefix">#</span><span class="rank-value">${item.rank}</span></div>
+            <div class="player">${playerMarkup}</div>
+            <div class="cell points">${escapeHtml(item.points)}</div>
+            <div class="cell record">${escapeHtml(item.record || '—')}</div>
+            <div class="cell">${escapeHtml(item.highElo || '—')}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function extractCellValue(cell) {
+      if (!cell) return '';
+      if (cell.f != null && cell.f !== '') return String(cell.f);
+      if (cell.v == null) return '';
+      return String(cell.v);
+    }
+
+    function mapTable(table) {
+      const headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
+      const playerIdx = findColumnIndex(headers, CONFIG.columns.player);
+      const pointsIdx = findColumnIndex(headers, CONFIG.columns.points);
+      const recordIdx = findColumnIndex(headers, CONFIG.columns.record);
+      const eloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
+      const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
+
+      if (playerIdx === -1 || pointsIdx === -1) {
+        throw new Error('Missing Player or Points column');
+      }
+
+      return table.rows
+        .map(row => row.c || [])
+        .map(cells => ({
+          player: extractCellValue(cells[playerIdx]).trim(),
+          points: toNumber(extractCellValue(cells[pointsIdx])),
+          record: recordIdx !== -1 ? extractCellValue(cells[recordIdx]).trim() : '',
+          highElo: eloIdx !== -1 ? extractCellValue(cells[eloIdx]).trim() : '',
+          profile: profileIdx !== -1 ? extractCellValue(cells[profileIdx]).trim() : ''
+        }))
+        .filter(r => r.player)
+        .sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          return toNumber(b.highElo) - toNumber(a.highElo);
+        })
+        .map((r, i) => ({ ...r, rank: i + 1 }));
+    }
+
+    window.handleSheetResponse = function(response) {
+      try {
+        if (!response || response.status !== 'ok' || !response.table) {
+          const message = response && response.errors && response.errors.length
+            ? response.errors.map(e => e.detailed_message || e.reason || 'Unknown sheet error').join('; ')
+            : 'Unknown sheet response';
+          throw new Error(message);
+        }
+
+        const mapped = mapTable(response.table);
+        render(mapped);
+        statusEl.textContent = `Live • ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        statusEl.className = 'status ok';
+      } catch (err) {
+        console.error(err);
+        rowsEl.innerHTML = `<div class="empty">Could not load sheet: ${escapeHtml(err.message)}</div>`;
+        statusEl.textContent = 'Sheet error';
+        statusEl.className = 'status err';
+      } finally {
+        if (activeScript) {
+          activeScript.remove();
+          activeScript = null;
+        }
+      }
+    };
+
+    function loadSheet() {
+      statusEl.textContent = 'Refreshing…';
+      statusEl.className = 'status';
+
+      if (activeScript) {
+        activeScript.remove();
+        activeScript = null;
+      }
+
+      const script = document.createElement('script');
+      script.src = `${gvizUrl()}&cacheBust=${Date.now()}`;
+      script.async = true;
+      script.onerror = () => {
+        rowsEl.innerHTML = '<div class="empty">Could not load sheet: network/script error</div>';
+        statusEl.textContent = 'Sheet error';
+        statusEl.className = 'status err';
+        if (activeScript) {
+          activeScript.remove();
+          activeScript = null;
+        }
+      };
+
+      activeScript = script;
+      document.body.appendChild(script);
+    }
+
+    loadSheet();
+    setInterval(loadSheet, CONFIG.refreshMs);
+  </script>
+</body>
+</html>

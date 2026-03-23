@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bounty Schedule Overlay</title>
+  <style>
+    :root {
+      --bg: rgba(31, 18, 10, 0.82);
+      --panel: rgba(72, 44, 25, 0.92);
+      --line: rgba(228, 191, 124, 0.55);
+      --gold: #f0c87a;
+      --paper: #f6e2b8;
+      --dust: #d9b274;
+      --shadow: rgba(0,0,0,0.45);
+      --good: #92d07f;
+      --warn: #ff9c88;
+      --top-bg: rgba(246, 226, 184, 0.94);
+      --top-text: #3a2214;
+      --top-line: rgba(58, 34, 20, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--paper);
+    }
+
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 24px;
+    }
+
+    .overlay {
+      width: 1120px;
+      background:
+        radial-gradient(circle at top, rgba(255, 215, 140, 0.09), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)),
+        var(--bg);
+      border: 2px solid var(--gold);
+      border-radius: 18px;
+      box-shadow: 0 18px 40px var(--shadow);
+      backdrop-filter: blur(4px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overlay::before,
+    .overlay::after {
+      content: "";
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.45;
+    }
+    .overlay::before { top: 72px; }
+    .overlay::after { bottom: 58px; }
+
+    .header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,222,173,0.07), rgba(0,0,0,0));
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.22em;
+      color: var(--dust);
+      opacity: 0.9;
+      margin-bottom: 4px;
+    }
+
+    .title {
+      font-size: 38px;
+      line-height: 0.95;
+      margin: 0;
+      color: var(--gold);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.28);
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--paper);
+      opacity: 0.9;
+    }
+
+    .table-head, .row {
+      display: grid;
+      grid-template-columns: 170px 150px 1.9fr 1.9fr;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 20px;
+    }
+
+    .table-head {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--dust);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .rows-wrap {
+      max-height: 720px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(240,200,122,0.75) rgba(0,0,0,0.18);
+    }
+
+    .rows-wrap::-webkit-scrollbar { width: 10px; }
+    .rows-wrap::-webkit-scrollbar-thumb {
+      background: rgba(240,200,122,0.75);
+      border-radius: 10px;
+    }
+    .rows-wrap::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.18);
+    }
+
+    .rows {
+      padding: 8px 0 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .row {
+      margin: 0 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(240,200,122,0.14);
+      border-radius: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .row:nth-child(odd) {
+      background: rgba(255,255,255,0.045);
+    }
+
+    .date-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .date-main {
+      font-size: 22px;
+      line-height: 1;
+      color: var(--paper);
+      font-weight: 700;
+    }
+
+    .date-sub {
+      font-size: 12px;
+      color: var(--dust);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .time-chip {
+      justify-self: start;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--gold);
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.22);
+    }
+
+    .duelist {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--paper);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .duel-sep {
+      justify-self: center;
+      font-size: 18px;
+      letter-spacing: 0.1em;
+      color: var(--dust);
+      opacity: 0.95;
+    }
+
+    .matchup {
+      display: contents;
+    }
+
+    .cell {
+      text-align: center;
+      font-size: 18px;
+      color: var(--paper);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px 14px;
+      border-top: 1px solid var(--line);
+      color: var(--dust);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .status.ok { color: var(--good); }
+    .status.err { color: var(--warn); }
+
+    .loading, .empty {
+      padding: 26px 20px 32px;
+      text-align: center;
+      color: var(--dust);
+      font-size: 18px;
+    }
+
+    @media (max-width: 1100px) {
+      body { padding: 10px; }
+      .overlay { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="header">
+      <div class="eyebrow">Showdown Cup</div>
+      <h1 class="title">Bounty Trail</h1>
+      <p class="subtitle">Upcoming duels from the schedule sheet</p>
+    </div>
+
+    <div class="table-head">
+      <div>Date</div>
+      <div>Time (GMT)</div>
+      <div>Gunslinger A</div>
+      <div>Gunslinger B</div>
+    </div>
+
+    <div class="rows-wrap">
+      <div id="rows" class="rows">
+        <div class="loading">Loading bounty trail…</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div id="sourceLabel">Source: Google Sheets</div>
+      <div id="status" class="status">Connecting…</div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      sheetId: '1REg0GhrXqt6h1TNIoDd6CUY397wT6acHbss_a1EyAH4',
+      gid: '1819488713',
+      refreshMs: 15000,
+      title: 'Bounty Trail',
+      subtitle: 'Upcoming duels from the schedule sheet',
+      sourceName: 'Showdown Cup Schedule',
+      columns: {
+        date: ['date'],
+        time: ['time (gmt)', 'time'],
+        player1: ['player 1'],
+        player2: ['player 2'],
+        completed: ['completed'],
+        order: ['order', '#', 'slot']
+      }
+    };
+
+    const rowsEl = document.getElementById('rows');
+    const statusEl = document.getElementById('status');
+    document.querySelector('.title').textContent = CONFIG.title;
+    document.querySelector('.subtitle').textContent = CONFIG.subtitle;
+    document.getElementById('sourceLabel').textContent = `Source: ${CONFIG.sourceName} • Times in GMT`;
+
+    let activeScript = null;
+
+    function gvizUrl() {
+      const tqx = encodeURIComponent('out:json;responseHandler:handleSheetResponse');
+      return `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?gid=${CONFIG.gid}&headers=1&tqx=${tqx}`;
+    }
+
+    function normalizeHeader(h) {
+      return String(h || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[()]/g, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ');
+    }
+
+    function findColumnIndex(headers, aliases) {
+      const normalized = headers.map(normalizeHeader);
+      for (const alias of aliases) {
+        const idx = normalized.indexOf(normalizeHeader(alias));
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function extractCellValue(cell) {
+      if (!cell) return '';
+      if (cell.f != null && cell.f !== '') return String(cell.f);
+      if (cell.v == null) return '';
+      return String(cell.v);
+    }
+
+    function parseDateBits(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return { main: 'TBD', sub: '', sortKey: Number.MAX_SAFE_INTEGER };
+
+      const cleaned = raw.replace(/(\d+)(st|nd|rd|th)\b/gi, '$1');
+      const withYear = /\b\d{4}\b/.test(cleaned) ? cleaned : `${cleaned} 2026`;
+      const fromDateCtor = new Date(withYear);
+      if (!Number.isNaN(fromDateCtor.getTime())) {
+        return {
+          main: fromDateCtor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          sub: fromDateCtor.toLocaleDateString('en-US', { weekday: 'short' }),
+          sortKey: fromDateCtor.getTime()
+        };
+      }
+
+      const serial = Number(raw);
+      if (!Number.isNaN(serial) && serial > 20000) {
+        const ms = Math.round((serial - 25569) * 86400 * 1000);
+        const dt = new Date(ms);
+        if (!Number.isNaN(dt.getTime())) {
+          return {
+            main: dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            sub: dt.toLocaleDateString('en-US', { weekday: 'short' }),
+            sortKey: dt.getTime()
+          };
+        }
+      }
+
+      return { main: raw, sub: '', sortKey: Number.MAX_SAFE_INTEGER - 1 };
+    }
+
+    function parseTimeBits(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return { label: 'TBD', sortMinutes: 999999 };
+
+      const timeMatch = raw.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
+      if (timeMatch) {
+        let hour = Number(timeMatch[1]);
+        const minute = Number(timeMatch[2] || 0);
+        const ap = (timeMatch[3] || '').toUpperCase();
+        if (ap === 'PM' && hour < 12) hour += 12;
+        if (ap === 'AM' && hour === 12) hour = 0;
+        const label = ap
+          ? `${Number(timeMatch[1])}:${String(minute).padStart(2, '0')} ${ap}`
+          : `${hour}:${String(minute).padStart(2, '0')}`;
+        return { label, sortMinutes: hour * 60 + minute };
+      }
+
+      const numeric = Number(raw);
+      if (!Number.isNaN(numeric) && numeric >= 0 && numeric < 1) {
+        const totalMinutes = Math.round(numeric * 24 * 60);
+        const hour24 = Math.floor(totalMinutes / 60) % 24;
+        const minute = totalMinutes % 60;
+        const ap = hour24 >= 12 ? 'PM' : 'AM';
+        const hour12 = hour24 % 12 || 12;
+        return { label: `${hour12}:${String(minute).padStart(2, '0')} ${ap}`, sortMinutes: totalMinutes };
+      }
+
+      return { label: raw, sortMinutes: 999998 };
+    }
+
+    function completedLooksTrue(value) {
+      const s = normalizeHeader(value);
+      return ['yes', 'y', 'true', '1', 'done', 'complete', 'completed', 'played', 'finished', 'final'].includes(s);
+    }
+
+    function render(data) {
+      if (!data.length) {
+        rowsEl.innerHTML = '<div class="empty">No schedule rows found.</div>';
+        return;
+      }
+
+      rowsEl.innerHTML = data.map((item, i) => `
+        <div class="row">
+          <div class="date-cell">
+            <div class="date-main">${escapeHtml(item.dateMain)}</div>
+            <div class="date-sub">${escapeHtml(item.dateSub || ' ')}</div>
+          </div>
+          <div class="time-chip">${escapeHtml(item.timeLabel)}</div>
+          <div class="duelist">${escapeHtml(item.player1 || 'TBD')}</div>
+          <div class="duelist">${escapeHtml(item.player2 || 'TBD')}</div>
+        </div>
+      `).join('');
+    }
+
+    function mapTable(table) {
+      const headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
+      const dateIdx = findColumnIndex(headers, CONFIG.columns.date);
+      const timeIdx = findColumnIndex(headers, CONFIG.columns.time);
+      const player1Idx = findColumnIndex(headers, CONFIG.columns.player1);
+      const player2Idx = findColumnIndex(headers, CONFIG.columns.player2);
+      const completedIdx = findColumnIndex(headers, CONFIG.columns.completed);
+      const orderIdx = findColumnIndex(headers, CONFIG.columns.order);
+
+      if (player1Idx === -1 || player2Idx === -1) {
+        throw new Error('Missing Player 1 / Player 2 columns');
+      }
+
+      const items = table.rows
+        .map((row, rowIndex) => ({ cells: row.c || [], rowIndex }))
+        .map(({ cells, rowIndex }) => {
+          const rawDate = dateIdx !== -1 ? extractCellValue(cells[dateIdx]).trim() : '';
+          const rawTime = timeIdx !== -1 ? extractCellValue(cells[timeIdx]).trim() : '';
+          const player1 = extractCellValue(cells[player1Idx]).trim();
+          const player2 = extractCellValue(cells[player2Idx]).trim();
+          const completed = completedIdx !== -1 ? extractCellValue(cells[completedIdx]).trim() : '';
+          const orderRaw = orderIdx !== -1 ? extractCellValue(cells[orderIdx]).trim() : '';
+          const dateBits = parseDateBits(rawDate);
+          const timeBits = parseTimeBits(rawTime);
+          const order = /^\d+$/.test(orderRaw) ? Number(orderRaw) : rowIndex;
+
+          return {
+            player1,
+            player2,
+            completed,
+            order,
+            dateMain: dateBits.main,
+            dateSub: dateBits.sub,
+            dateSortKey: dateBits.sortKey,
+            timeLabel: timeBits.label,
+            timeSortKey: timeBits.sortMinutes
+          };
+        })
+        .filter(item => item.player1 || item.player2)
+        .filter(item => !completedLooksTrue(item.completed));
+
+      items.sort((a, b) => {
+        if (a.dateSortKey !== b.dateSortKey) return a.dateSortKey - b.dateSortKey;
+        if (a.timeSortKey !== b.timeSortKey) return a.timeSortKey - b.timeSortKey;
+        return a.order - b.order;
+      });
+
+      return items;
+    }
+
+    function setStatus(text, ok = true) {
+      statusEl.textContent = text;
+      statusEl.className = `status ${ok ? 'ok' : 'err'}`;
+    }
+
+    function cleanupScript() {
+      if (activeScript && activeScript.parentNode) {
+        activeScript.parentNode.removeChild(activeScript);
+      }
+      activeScript = null;
+    }
+
+    function loadSheet() {
+      cleanupScript();
+      setStatus('Refreshing…', true);
+      window.handleSheetResponse = function(response) {
+        try {
+          const data = mapTable(response.table);
+          render(data);
+          setStatus(`Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, true);
+        } catch (err) {
+          console.error(err);
+          rowsEl.innerHTML = `<div class="empty">${escapeHtml(err.message || 'Could not read schedule sheet.')}</div>`;
+          setStatus('Column match failed', false);
+        }
+      };
+
+      activeScript = document.createElement('script');
+      activeScript.src = `${gvizUrl()}&cacheBust=${Date.now()}`;
+      activeScript.onerror = function() {
+        rowsEl.innerHTML = '<div class="empty">Could not load Google Sheet.</div>';
+        setStatus('Sheet unavailable', false);
+      };
+      document.body.appendChild(activeScript);
+    }
+
+    loadSheet();
+    setInterval(loadSheet, CONFIG.refreshMs);
+  </script>
+</body>
+</html>
