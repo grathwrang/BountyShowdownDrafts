@@ -350,7 +350,7 @@
   {
     "id": 59,
     "title": "Stop Hitting Yourself 2",
-    "description": "Kill at least 50 of your own units and win",
+    "description": "Kill at least 50 of your own units and win (deleting units does not count)",
     "level": 2
   },
   {
@@ -518,13 +518,13 @@
   {
     "id": 87,
     "title": "Stop Hitting Yourself 3",
-    "description": "Kill at least 100 of your own units and win",
+    "description": "Kill at least 100 of your own units and win (deleting units does not count)",
     "level": 3
   },
   {
     "id": 88,
     "title": "Stop Hitting Yourself",
-    "description": "Kill at least 25 of your own units and win",
+    "description": "Kill at least 25 of your own units and win (deleting units does not count)",
     "level": 1
   },
   {
