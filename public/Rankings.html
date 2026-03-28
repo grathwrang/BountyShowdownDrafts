@@ -392,53 +392,29 @@
       return cleaned ? Number(cleaned[0]) : 0;
     }
 
-    function parseStrictNumber(value) {
-      const raw = String(value || '').trim();
-      if (!raw) return NaN;
-      if (!/^-?\d+(\.\d+)?$/.test(raw)) return NaN;
-      return Number(raw);
-    }
-
     function parseSetScore(value) {
       const raw = String(value || '').trim();
       if (!raw) return null;
-      const match = raw.match(/^(\d+)\s*[-–:]\s*(\d+)$/);
+      const match = raw.match(/(\d+)\s*[-–:]\s*(\d+)/);
       if (!match) return null;
       return { a: Number(match[1]), b: Number(match[2]) };
     }
 
-    function parseSetScoreFromTail(value) {
-      const raw = String(value || '').trim();
-      if (!raw) return null;
-      const match = raw.match(/(\d+)\s*[-–:]\s*(\d+)\s*$/);
-      if (!match) return null;
-      return { a: Number(match[1]), b: Number(match[2]) };
-    }
-
-    function resolveSetScore(cells, preferredIndexes) {
-      const allValues = cells.map(extractCellValue);
-
-      for (const idx of preferredIndexes) {
-        const parsed = parseSetScore(allValues[idx]);
-        if (parsed) return parsed;
+    function parseRowPoints(cells, scoreIndexes, winner, player1, player2) {
+      let parsedScore = null;
+      for (const idx of scoreIndexes) {
+        parsedScore = parseSetScore(extractCellValue(cells[idx]));
+        if (parsedScore) break;
       }
+      if (!parsedScore) return { p1Points: 0, p2Points: 0 };
 
-      for (const value of allValues) {
-        const parsed = parseSetScore(value);
-        if (parsed) return parsed;
+      if (winner && normalizeName(winner) === normalizeName(player1)) {
+        return { p1Points: parsedScore.a, p2Points: parsedScore.b };
       }
-
-      for (const idx of preferredIndexes) {
-        const parsed = parseSetScoreFromTail(allValues[idx]);
-        if (parsed) return parsed;
+      if (winner && normalizeName(winner) === normalizeName(player2)) {
+        return { p1Points: parsedScore.b, p2Points: parsedScore.a };
       }
-
-      for (const value of allValues) {
-        const parsed = parseSetScoreFromTail(value);
-        if (parsed) return parsed;
-      }
-
-      return null;
+      return { p1Points: parsedScore.a, p2Points: parsedScore.b };
     }
 
     function extractBountyItems(value) {
@@ -513,16 +489,13 @@
       const headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
       const player1Idx = findColumnIndex(headers, CONFIG.columns.player1);
       const player2Idx = findColumnIndex(headers, CONFIG.columns.player2);
-      const player1RecordIdx = findColumnIndex(headers, CONFIG.columns.player1Record);
-      const player2RecordIdx = findColumnIndex(headers, CONFIG.columns.player2Record);
       const winnerIdx = findColumnIndex(headers, CONFIG.columns.winner);
-      const scoreIdx = findColumnIndex(headers, CONFIG.columns.score);
       const scoreIndexes = findColumnIndexes(headers, CONFIG.columns.score);
       const highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
       const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
 
-      if (player1Idx === -1 || player2Idx === -1 || player1RecordIdx === -1 || player2RecordIdx === -1) {
-        throw new Error('Missing required columns: Player 1, Player 2, Player 1 Record, Player 2 Record');
+      if (player1Idx === -1 || player2Idx === -1) {
+        throw new Error('Missing required columns: Player 1 and Player 2');
       }
 
       const p1BountyIndexes = getBountyColumnIndexes(headers, ['player 1', 'player1', 'p1']);
@@ -537,33 +510,8 @@
         const player2 = extractCellValue(cells[player2Idx]).trim();
         if (!player1 && !player2) continue;
 
-        const p1RecordRaw = extractCellValue(cells[player1RecordIdx]);
-        const p2RecordRaw = extractCellValue(cells[player2RecordIdx]);
-        let p1Record = parseStrictNumber(p1RecordRaw);
-        let p2Record = parseStrictNumber(p2RecordRaw);
-
-        if (Number.isNaN(p1Record) || Number.isNaN(p2Record)) {
-          const winner = winnerIdx !== -1 ? extractCellValue(cells[winnerIdx]).trim() : '';
-          const parsedScore = resolveSetScore(
-            cells,
-            scoreIdx !== -1 ? [scoreIdx, ...scoreIndexes.filter(idx => idx !== scoreIdx)] : scoreIndexes
-          );
-          if (parsedScore) {
-            if (winner && normalizeName(winner) === normalizeName(player1)) {
-              p1Record = parsedScore.a;
-              p2Record = parsedScore.b;
-            } else if (winner && normalizeName(winner) === normalizeName(player2)) {
-              p1Record = parsedScore.b;
-              p2Record = parsedScore.a;
-            } else {
-              p1Record = parsedScore.a;
-              p2Record = parsedScore.b;
-            }
-          }
-        }
-
-        if (Number.isNaN(p1Record)) p1Record = 0;
-        if (Number.isNaN(p2Record)) p2Record = 0;
+        const winner = winnerIdx !== -1 ? extractCellValue(cells[winnerIdx]).trim() : '';
+        const { p1Points, p2Points } = parseRowPoints(cells, scoreIndexes, winner, player1, player2);
 
         const profile = profileIdx !== -1 ? extractCellValue(cells[profileIdx]).trim() : '';
         const elo = highEloIdx !== -1 ? extractCellValue(cells[highEloIdx]).trim() : '';
@@ -583,7 +531,7 @@
               profile: ''
             });
           }
-          aggregateRowPlayer(players.get(key), player1, p1Record, p2Record, p1BountyIndexes, cells, profile, elo);
+          aggregateRowPlayer(players.get(key), player1, p1Points, p2Points, p1BountyIndexes, cells, profile, elo);
         }
 
         if (player2) {
@@ -601,7 +549,7 @@
               profile: ''
             });
           }
-          aggregateRowPlayer(players.get(key), player2, p2Record, p1Record, p2BountyIndexes, cells, profile, elo);
+          aggregateRowPlayer(players.get(key), player2, p2Points, p1Points, p2BountyIndexes, cells, profile, elo);
         }
       }
 
