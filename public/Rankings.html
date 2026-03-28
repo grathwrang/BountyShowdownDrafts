@@ -395,6 +395,22 @@
     function parseSetScore(value) {
       const raw = String(value || '').trim();
       if (!raw) return null;
+
+      const monthScore = raw.match(/^(\d{1,2})\s*[-/]\s*([A-Za-z]{3,})$/);
+      if (monthScore) {
+        const day = Number(monthScore[1]);
+        const monthText = monthScore[2].slice(0, 3).toLowerCase();
+        const monthMap = {
+          jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+          jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12
+        };
+        const month = monthMap[monthText];
+        if (month) {
+          // Sheets often auto-formats "4-1" as "01-Apr". Convert back to "4-1" (month-day).
+          return { a: month, b: day };
+        }
+      }
+
       const match = raw.match(/(\d+)\s*[-–:]\s*(\d+)/);
       if (!match) return null;
       return { a: Number(match[1]), b: Number(match[2]) };
