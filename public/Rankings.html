@@ -436,6 +436,11 @@
       return ['yes', 'y', 'true', '1', 'done', 'complete', 'completed', 'played', 'finished', 'final'].includes(s);
     }
 
+    function completedLooksFalse(value) {
+      const s = normalizeHeader(value);
+      return ['no', 'n', 'false', '0', 'incomplete', 'pending', 'todo', 'upcoming', 'not played'].includes(s);
+    }
+
     function getBountyColumnIndexes(headers, playerAliases) {
       const normalized = headers.map(normalizeHeader);
       const playerTags = playerAliases.map(normalizeHeader);
@@ -495,7 +500,7 @@
       for (const row of table.rows) {
         const cells = row.c || [];
         const completedValue = completedIdx !== -1 ? extractCellValue(cells[completedIdx]).trim() : '';
-        if (completedIdx !== -1 && !completedLooksTrue(completedValue)) continue;
+        if (completedIdx !== -1 && completedLooksFalse(completedValue)) continue;
 
         const player1 = extractCellValue(cells[player1Idx]).trim();
         const player2 = extractCellValue(cells[player2Idx]).trim();
