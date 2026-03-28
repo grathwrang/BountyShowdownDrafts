@@ -385,7 +385,32 @@
     function parseScoreValue(value) {
       const raw = String(value || '').trim();
       if (!raw) return 0;
-      return toNumber(raw);
+      const n = toNumber(raw);
+      if (n > 0) return n;
+
+      const monthScore = raw.match(/^(\d{1,2})\s*[-/]\s*([A-Za-z]{3,})$/);
+      if (!monthScore) return 0;
+      const day = Number(monthScore[1]);
+      const monthText = monthScore[2].slice(0, 3).toLowerCase();
+      const monthMap = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+      const month = monthMap[monthText] || 0;
+      return month > 0 ? month : day;
+    }
+
+    function parseSingleScore(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const match = raw.match(/(\d+)\s*[-–:]\s*(\d+)/);
+      if (match) return { a: Number(match[1]), b: Number(match[2]) };
+
+      const monthScore = raw.match(/^(\d{1,2})\s*[-/]\s*([A-Za-z]{3,})$/);
+      if (!monthScore) return null;
+      const day = Number(monthScore[1]);
+      const monthText = monthScore[2].slice(0, 3).toLowerCase();
+      const monthMap = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+      const month = monthMap[monthText];
+      if (!month) return null;
+      return { a: month, b: day };
     }
 
     function extractBountyItems(value) {
@@ -462,11 +487,13 @@
       const player2Idx = findColumnIndex(headers, CONFIG.columns.player2);
       const player1ScoreIdx = findColumnIndex(headers, CONFIG.columns.player1Score);
       const player2ScoreIdx = findColumnIndex(headers, CONFIG.columns.player2Score);
+      const winnerIdx = findColumnIndex(headers, ['winner']);
+      const singleScoreIdx = findColumnIndex(headers, ['score', 'set score', 'final score']);
       const highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
       const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
 
-      if (player1Idx === -1 || player2Idx === -1 || player1ScoreIdx === -1 || player2ScoreIdx === -1) {
-        throw new Error('Missing required columns: Player 1, Player 2, Player 1 score, Player 2 score');
+      if (player1Idx === -1 || player2Idx === -1) {
+        throw new Error('Missing required columns: Player 1 and Player 2');
       }
 
       const p1BountyIndexes = getBountyColumnIndexes(headers, ['player 1', 'player1', 'p1']);
@@ -481,8 +508,22 @@
         const player2 = extractCellValue(cells[player2Idx]).trim();
         if (!player1 && !player2) continue;
 
-        const p1Points = parseScoreValue(extractCellValue(cells[player1ScoreIdx]));
-        const p2Points = parseScoreValue(extractCellValue(cells[player2ScoreIdx]));
+        let p1Points = player1ScoreIdx !== -1 ? parseScoreValue(extractCellValue(cells[player1ScoreIdx])) : 0;
+        let p2Points = player2ScoreIdx !== -1 ? parseScoreValue(extractCellValue(cells[player2ScoreIdx])) : 0;
+
+        if ((p1Points === 0 && p2Points === 0) && singleScoreIdx !== -1) {
+          const parsed = parseSingleScore(extractCellValue(cells[singleScoreIdx]));
+          const winner = winnerIdx !== -1 ? extractCellValue(cells[winnerIdx]).trim() : '';
+          if (parsed) {
+            if (winner && normalizeName(winner) === normalizeName(player2)) {
+              p1Points = parsed.b;
+              p2Points = parsed.a;
+            } else {
+              p1Points = parsed.a;
+              p2Points = parsed.b;
+            }
+          }
+        }
 
         const profile = profileIdx !== -1 ? extractCellValue(cells[profileIdx]).trim() : '';
         const elo = highEloIdx !== -1 ? extractCellValue(cells[highEloIdx]).trim() : '';
