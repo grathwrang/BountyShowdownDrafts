@@ -431,16 +431,6 @@
       return String(cell.v);
     }
 
-    function completedLooksTrue(value) {
-      const s = normalizeHeader(value);
-      return ['yes', 'y', 'true', '1', 'done', 'complete', 'completed', 'played', 'finished', 'final'].includes(s);
-    }
-
-    function completedLooksFalse(value) {
-      const s = normalizeHeader(value);
-      return ['no', 'n', 'false', '0', 'incomplete', 'pending', 'todo', 'upcoming', 'not played'].includes(s);
-    }
-
     function getBountyColumnIndexes(headers, playerAliases) {
       const normalized = headers.map(normalizeHeader);
       const playerTags = playerAliases.map(normalizeHeader);
@@ -483,7 +473,6 @@
       const player2RecordIdx = findColumnIndex(headers, CONFIG.columns.player2Record);
       const winnerIdx = findColumnIndex(headers, CONFIG.columns.winner);
       const scoreIdx = findColumnIndex(headers, CONFIG.columns.score);
-      const completedIdx = findColumnIndex(headers, CONFIG.columns.completed);
       const highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
       const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
 
@@ -499,9 +488,6 @@
 
       for (const row of table.rows) {
         const cells = row.c || [];
-        const completedValue = completedIdx !== -1 ? extractCellValue(cells[completedIdx]).trim() : '';
-        if (completedIdx !== -1 && completedLooksFalse(completedValue)) continue;
-
         const player1 = extractCellValue(cells[player1Idx]).trim();
         const player2 = extractCellValue(cells[player2Idx]).trim();
         if (!player1 && !player2) continue;
