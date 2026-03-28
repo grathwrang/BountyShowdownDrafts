@@ -35,7 +35,7 @@
     }
 
     .overlay {
-      width: 980px;
+      width: 1160px;
       background:
         radial-gradient(circle at top, rgba(255, 215, 140, 0.09), transparent 42%),
         linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15)),
@@ -98,7 +98,7 @@
 
     .table-head, .row {
       display: grid;
-      grid-template-columns: 70px 3.1fr 110px 120px 120px;
+      grid-template-columns: 70px 2.6fr 120px 130px 190px 130px;
       gap: 10px;
       align-items: center;
       padding: 10px 20px;
@@ -124,15 +124,8 @@
       scrollbar-color: rgba(240, 200, 122, 0.55) rgba(0,0,0,0.12);
     }
 
-    .rows::-webkit-scrollbar {
-      width: 10px;
-    }
-
-    .rows::-webkit-scrollbar-track {
-      background: rgba(0,0,0,0.12);
-      border-radius: 999px;
-    }
-
+    .rows::-webkit-scrollbar { width: 10px; }
+    .rows::-webkit-scrollbar-track { background: rgba(0,0,0,0.12); border-radius: 999px; }
     .rows::-webkit-scrollbar-thumb {
       background: rgba(240, 200, 122, 0.55);
       border-radius: 999px;
@@ -155,16 +148,11 @@
 
     .row.top4 .rank,
     .row.top4 .cell,
-    .row.top4 .player-name {
-      color: #4c2d17;
-      text-shadow: none;
-    }
+    .row.top4 .player-name { color: #4c2d17; text-shadow: none; }
 
     .row.top4 .cell.points,
     .row.top4 .player-name:hover,
-    .row.top4 .player-name:focus-visible {
-      color: #7a4318;
-    }
+    .row.top4 .player-name:focus-visible { color: #7a4318; }
 
     .row.first-place {
       border-color: rgba(255, 232, 176, 0.98);
@@ -183,10 +171,7 @@
       font-size: 22px;
     }
 
-    .rank-prefix {
-      font-size: 18px;
-      opacity: 0.9;
-    }
+    .rank-prefix { font-size: 18px; opacity: 0.9; }
 
     .rank-value {
       display: inline-flex;
@@ -205,9 +190,7 @@
       box-shadow: 0 0 0 2px rgba(255, 215, 120, 0.3);
     }
 
-    .player {
-      min-width: 0;
-    }
+    .player { min-width: 0; }
 
     .player-name {
       display: inline-block;
@@ -219,6 +202,7 @@
       text-overflow: ellipsis;
       color: var(--paper);
       text-decoration: none;
+      cursor: help;
     }
 
     .player-name:hover,
@@ -234,15 +218,9 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .cell.points {
-      color: var(--gold);
-      font-weight: 700;
-      font-size: 28px;
-    }
-
-    .cell.record {
-      font-size: 18px;
-    }
+    .cell.points { color: var(--gold); font-weight: 700; font-size: 28px; }
+    .cell.record { font-size: 18px; }
+    .cell.bounty-total { font-size: 20px; }
 
     .footer {
       display: flex;
@@ -267,7 +245,7 @@
       font-size: 18px;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1200px) {
       body { padding: 10px; }
       .overlay { width: 100%; }
     }
@@ -279,7 +257,7 @@
       <div class="title-wrap">
         <div class="eyebrow">Showdown Cup</div>
         <h1 class="title">Bounty Board</h1>
-        <p class="subtitle">Group stage standings sorted by points</p>
+        <p class="subtitle">Completed set standings sorted by points</p>
       </div>
     </div>
 
@@ -287,7 +265,8 @@
       <div>Rank</div>
       <div>Gunslinger</div>
       <div>Points</div>
-      <div>Record</div>
+      <div>Set Record</div>
+      <div>Total Bounties Claimed</div>
       <div>Elo High</div>
     </div>
 
@@ -303,18 +282,60 @@
 
   <script>
     const CONFIG = {
-      sheetId: '17izLtyOLMWXtNpsOmDz4kCManSt6dg1KYrnsV9R4Uus',
-      gid: '0',
+      sheetId: '1REg0GhrXqt6h1TNIoDd6CUY397wT6acHbss_a1EyAH4',
+      gid: '1506731120',
       refreshMs: 15000,
       title: 'Bounty Board',
-      subtitle: 'Group stage standings sorted by points',
-      sourceName: 'Showdown Cup Group Stage',
+      subtitle: 'Completed set standings sorted by points',
+      sourceName: 'Showdown Cup Completed Sets',
       columns: {
-        player: ['player', 'name'],
-        points: ['points', 'pts'],
-        record: ['record', 'w-l', 'w/l'],
-        highElo: ['all time high elo', 'high elo', 'elo'],
-        profile: ['profile', 'link', 'url']
+        player1: ['player 1', 'player1', 'p1', 'gunslinger a'],
+        player2: ['player 2', 'player2', 'p2', 'gunslinger b'],
+        player1Record: ['player 1 record', 'player1 record', 'p1 record', 'p1 score', 'score p1'],
+        player2Record: ['player 2 record', 'player2 record', 'p2 record', 'p2 score', 'score p2'],
+        highElo: ['all time high elo', 'high elo', 'elo high', 'elo'],
+        profile: ['profile', 'link', 'url'],
+        completed: ['completed', 'done', 'finished', 'played']
+      },
+      staticHighElos: {
+        'chpstkx': '1,349',
+        'Togawa Sakikoi': '2,368',
+        'Leviii': '1,603',
+        'Not Sure': '1,808',
+        'OLADUSHEK': '2,104',
+        'DuDuZhu': '2,532',
+        'Clearlove': '2,306',
+        'Nik_May': '1,587',
+        'GurasTobbyBufas VaMiRaGoDXo': '1,852',
+        'Wean Dinchester': '2,371',
+        'AT41': '1,735',
+        'Burgoman2': '1,190',
+        'moon182': '1,151',
+        'Dr. Casă': '1,550',
+        'FrozenFlame': '1,689',
+        'Supermonkeycar3000': '1,681',
+        '[SWB]Tralfamador': '1,162',
+        'DzeDanik': '2,068',
+        'OS +| NeoZz': '2,563',
+        'Rodrixs': '2,468',
+        'Argh': '2,451',
+        'Lighty': '2,396',
+        'Matze': '2,341',
+        'DGHIR | ZARC': '2,261',
+        'maxymczech': '2,007',
+        '[DD] Hellooosh': '1,708',
+        'Vollkhornekeks': '1,659',
+        'Superhero55': '1,635',
+        'narutoshery': '1,611',
+        'Pl0tterGhost': '1,591',
+        'Chipmunk': '1,526',
+        'SmarttGuyy': '1,517',
+        'Lefty_Sexton': '1,409',
+        'Misc_Leopard': '1,329',
+        'TdB.daniferdoser': '1,266',
+        'murd3rfce': '1,225',
+        'Dragonlord Freya': '1,077',
+        'MousePuddles': '1,005'
       }
     };
 
@@ -335,8 +356,13 @@
       return String(h || '')
         .trim()
         .toLowerCase()
+        .replace(/[()]/g, '')
         .replace(/[_-]+/g, ' ')
         .replace(/\s+/g, ' ');
+    }
+
+    function normalizeName(name) {
+      return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
     }
 
     function findColumnIndex(headers, aliases) {
@@ -352,6 +378,16 @@
       if (value == null) return 0;
       const cleaned = String(value).replace(/,/g, '').match(/-?\d+(\.\d+)?/);
       return cleaned ? Number(cleaned[0]) : 0;
+    }
+
+    function extractBountyItems(value) {
+      const text = String(value || '').trim();
+      if (!text) return [];
+      return text
+        .split(/[\n;,|]+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .filter(s => !/^n\/?a$/i.test(s) && !/^none$/i.test(s));
     }
 
     function escapeHtml(text) {
@@ -371,31 +407,6 @@
       return `https://${raw}`;
     }
 
-    function render(data) {
-      if (!data.length) {
-        rowsEl.innerHTML = '<div class="empty">No standings rows found.</div>';
-        return;
-      }
-
-      rowsEl.innerHTML = data.map((item, i) => {
-        const playerName = escapeHtml(item.player);
-        const profileUrl = safeProfileUrl(item.profile);
-        const playerMarkup = profileUrl
-          ? `<a class="player-name" href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer">${playerName}</a>`
-          : `<span class="player-name">${playerName}</span>`;
-
-        return `
-          <div class="row ${i < 4 ? 'top4' : ''} ${i === 0 ? 'first-place' : ''}">
-            <div class="rank"><span class="rank-prefix">#</span><span class="rank-value">${item.rank}</span></div>
-            <div class="player">${playerMarkup}</div>
-            <div class="cell points">${escapeHtml(item.points)}</div>
-            <div class="cell record">${escapeHtml(item.record || '—')}</div>
-            <div class="cell">${escapeHtml(item.highElo || '—')}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
     function extractCellValue(cell) {
       if (!cell) return '';
       if (cell.f != null && cell.f !== '') return String(cell.f);
@@ -403,33 +414,176 @@
       return String(cell.v);
     }
 
-    function mapTable(table) {
-      const headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
-      const playerIdx = findColumnIndex(headers, CONFIG.columns.player);
-      const pointsIdx = findColumnIndex(headers, CONFIG.columns.points);
-      const recordIdx = findColumnIndex(headers, CONFIG.columns.record);
-      const eloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
-      const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
+    function completedLooksTrue(value) {
+      const s = normalizeHeader(value);
+      return ['yes', 'y', 'true', '1', 'done', 'complete', 'completed', 'played', 'finished', 'final'].includes(s);
+    }
 
-      if (playerIdx === -1 || pointsIdx === -1) {
-        throw new Error('Missing Player or Points column');
+    function getBountyColumnIndexes(headers, playerAliases) {
+      const normalized = headers.map(normalizeHeader);
+      const playerTags = playerAliases.map(normalizeHeader);
+      return normalized
+        .map((header, index) => ({ header, index }))
+        .filter(item => item.header.includes('bount') && playerTags.some(tag => item.header.includes(tag.replace(' ', '')) || item.header.includes(tag)))
+        .map(item => item.index);
+    }
+
+    function getPlayerKey(player, tracker) {
+      const normalized = normalizeName(player);
+      if (!tracker.has(normalized)) tracker.set(normalized, player.trim());
+      return normalized;
+    }
+
+    function aggregateRowPlayer(entry, playerName, pointsEarned, opponentPoints, bountyColumnIndexes, cells, profile, elo) {
+      if (!playerName) return;
+      entry.points += pointsEarned;
+      if (pointsEarned > opponentPoints) entry.setWins += 1;
+      else if (pointsEarned < opponentPoints) entry.setLosses += 1;
+      else entry.setTies += 1;
+
+      for (const idx of bountyColumnIndexes) {
+        const values = extractBountyItems(extractCellValue(cells[idx]));
+        for (const v of values) {
+          entry.totalBounties += 1;
+          entry.bountyList.push(v);
+        }
       }
 
-      return table.rows
-        .map(row => row.c || [])
-        .map(cells => ({
-          player: extractCellValue(cells[playerIdx]).trim(),
-          points: toNumber(extractCellValue(cells[pointsIdx])),
-          record: recordIdx !== -1 ? extractCellValue(cells[recordIdx]).trim() : '',
-          highElo: eloIdx !== -1 ? extractCellValue(cells[eloIdx]).trim() : '',
-          profile: profileIdx !== -1 ? extractCellValue(cells[profileIdx]).trim() : ''
-        }))
-        .filter(r => r.player)
-        .sort((a, b) => {
-          if (b.points !== a.points) return b.points - a.points;
-          return toNumber(b.highElo) - toNumber(a.highElo);
-        })
-        .map((r, i) => ({ ...r, rank: i + 1 }));
+      if (!entry.profile && profile) entry.profile = profile;
+      if (!entry.highElo && elo) entry.highElo = elo;
+    }
+
+    function mapTable(table) {
+      const headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
+      const player1Idx = findColumnIndex(headers, CONFIG.columns.player1);
+      const player2Idx = findColumnIndex(headers, CONFIG.columns.player2);
+      const player1RecordIdx = findColumnIndex(headers, CONFIG.columns.player1Record);
+      const player2RecordIdx = findColumnIndex(headers, CONFIG.columns.player2Record);
+      const completedIdx = findColumnIndex(headers, CONFIG.columns.completed);
+      const highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
+      const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
+
+      if (player1Idx === -1 || player2Idx === -1 || player1RecordIdx === -1 || player2RecordIdx === -1) {
+        throw new Error('Missing required columns: Player 1, Player 2, Player 1 Record, Player 2 Record');
+      }
+
+      const p1BountyIndexes = getBountyColumnIndexes(headers, ['player 1', 'player1', 'p1']);
+      const p2BountyIndexes = getBountyColumnIndexes(headers, ['player 2', 'player2', 'p2']);
+
+      const players = new Map();
+      const canonicalNames = new Map();
+
+      for (const row of table.rows) {
+        const cells = row.c || [];
+        const completedValue = completedIdx !== -1 ? extractCellValue(cells[completedIdx]).trim() : '';
+        if (completedIdx !== -1 && !completedLooksTrue(completedValue)) continue;
+
+        const player1 = extractCellValue(cells[player1Idx]).trim();
+        const player2 = extractCellValue(cells[player2Idx]).trim();
+        if (!player1 && !player2) continue;
+
+        const p1Record = toNumber(extractCellValue(cells[player1RecordIdx]));
+        const p2Record = toNumber(extractCellValue(cells[player2RecordIdx]));
+
+        const profile = profileIdx !== -1 ? extractCellValue(cells[profileIdx]).trim() : '';
+        const elo = highEloIdx !== -1 ? extractCellValue(cells[highEloIdx]).trim() : '';
+
+        if (player1) {
+          const key = getPlayerKey(player1, canonicalNames);
+          if (!players.has(key)) {
+            players.set(key, {
+              player: canonicalNames.get(key),
+              points: 0,
+              setWins: 0,
+              setLosses: 0,
+              setTies: 0,
+              totalBounties: 0,
+              bountyList: [],
+              highElo: '',
+              profile: ''
+            });
+          }
+          aggregateRowPlayer(players.get(key), player1, p1Record, p2Record, p1BountyIndexes, cells, profile, elo);
+        }
+
+        if (player2) {
+          const key = getPlayerKey(player2, canonicalNames);
+          if (!players.has(key)) {
+            players.set(key, {
+              player: canonicalNames.get(key),
+              points: 0,
+              setWins: 0,
+              setLosses: 0,
+              setTies: 0,
+              totalBounties: 0,
+              bountyList: [],
+              highElo: '',
+              profile: ''
+            });
+          }
+          aggregateRowPlayer(players.get(key), player2, p2Record, p1Record, p2BountyIndexes, cells, profile, elo);
+        }
+      }
+
+      const fallbackElos = new Map(
+        Object.entries(CONFIG.staticHighElos).map(([name, elo]) => [normalizeName(name), String(elo)])
+      );
+
+      const mapped = [...players.values()].map(entry => {
+        const normalizedName = normalizeName(entry.player);
+        const fallbackElo = fallbackElos.get(normalizedName) || '';
+        const highElo = entry.highElo || fallbackElo;
+        const uniqueBounties = [...new Set(entry.bountyList.map(item => item.trim()).filter(Boolean))];
+
+        return {
+          player: entry.player,
+          points: entry.points,
+          record: `${entry.setWins}-${entry.setLosses}${entry.setTies ? `-${entry.setTies}` : ''}`,
+          totalBounties: entry.totalBounties,
+          completedBounties: uniqueBounties,
+          highElo,
+          profile: entry.profile
+        };
+      });
+
+      mapped.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.totalBounties !== a.totalBounties) return b.totalBounties - a.totalBounties;
+        return toNumber(b.highElo) - toNumber(a.highElo);
+      });
+
+      return mapped.map((item, i) => ({ ...item, rank: i + 1 }));
+    }
+
+    function render(data) {
+      if (!data.length) {
+        rowsEl.innerHTML = '<div class="empty">No completed set rows found.</div>';
+        return;
+      }
+
+      rowsEl.innerHTML = data.map((item, i) => {
+        const playerName = escapeHtml(item.player);
+        const profileUrl = safeProfileUrl(item.profile);
+        const bountyTooltip = item.completedBounties.length
+          ? `Completed bounties:\n• ${item.completedBounties.join('\n• ')}`
+          : 'No completed bounties found.';
+        const tooltipAttr = escapeHtml(bountyTooltip);
+
+        const playerMarkup = profileUrl
+          ? `<a class="player-name" title="${tooltipAttr}" href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer">${playerName}</a>`
+          : `<span class="player-name" title="${tooltipAttr}">${playerName}</span>`;
+
+        return `
+          <div class="row ${i < 4 ? 'top4' : ''} ${i === 0 ? 'first-place' : ''}">
+            <div class="rank"><span class="rank-prefix">#</span><span class="rank-value">${item.rank}</span></div>
+            <div class="player">${playerMarkup}</div>
+            <div class="cell points">${escapeHtml(item.points)}</div>
+            <div class="cell record">${escapeHtml(item.record || '—')}</div>
+            <div class="cell bounty-total">${escapeHtml(item.totalBounties)}</div>
+            <div class="cell">${escapeHtml(item.highElo || '—')}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     window.handleSheetResponse = function(response) {
