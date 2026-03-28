@@ -376,6 +376,16 @@
       return -1;
     }
 
+    function findColumnIndexes(headers, aliases) {
+      const normalized = headers.map(normalizeHeader);
+      const aliasSet = new Set(aliases.map(alias => normalizeHeader(alias)));
+      const indexes = [];
+      normalized.forEach((header, index) => {
+        if (aliasSet.has(header)) indexes.push(index);
+      });
+      return indexes;
+    }
+
     function toNumber(value) {
       if (value == null) return 0;
       const cleaned = String(value).replace(/,/g, '').match(/-?\d+(\.\d+)?/);
@@ -392,9 +402,43 @@
     function parseSetScore(value) {
       const raw = String(value || '').trim();
       if (!raw) return null;
-      const match = raw.match(/(\d+)\s*[-–:]\s*(\d+)/);
+      const match = raw.match(/^(\d+)\s*[-–:]\s*(\d+)$/);
       if (!match) return null;
       return { a: Number(match[1]), b: Number(match[2]) };
+    }
+
+    function parseSetScoreFromTail(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const match = raw.match(/(\d+)\s*[-–:]\s*(\d+)\s*$/);
+      if (!match) return null;
+      return { a: Number(match[1]), b: Number(match[2]) };
+    }
+
+    function resolveSetScore(cells, preferredIndexes) {
+      const allValues = cells.map(extractCellValue);
+
+      for (const idx of preferredIndexes) {
+        const parsed = parseSetScore(allValues[idx]);
+        if (parsed) return parsed;
+      }
+
+      for (const value of allValues) {
+        const parsed = parseSetScore(value);
+        if (parsed) return parsed;
+      }
+
+      for (const idx of preferredIndexes) {
+        const parsed = parseSetScoreFromTail(allValues[idx]);
+        if (parsed) return parsed;
+      }
+
+      for (const value of allValues) {
+        const parsed = parseSetScoreFromTail(value);
+        if (parsed) return parsed;
+      }
+
+      return null;
     }
 
     function extractBountyItems(value) {
@@ -473,6 +517,7 @@
       const player2RecordIdx = findColumnIndex(headers, CONFIG.columns.player2Record);
       const winnerIdx = findColumnIndex(headers, CONFIG.columns.winner);
       const scoreIdx = findColumnIndex(headers, CONFIG.columns.score);
+      const scoreIndexes = findColumnIndexes(headers, CONFIG.columns.score);
       const highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
       const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
 
@@ -499,8 +544,10 @@
 
         if (Number.isNaN(p1Record) || Number.isNaN(p2Record)) {
           const winner = winnerIdx !== -1 ? extractCellValue(cells[winnerIdx]).trim() : '';
-          const scoreRaw = scoreIdx !== -1 ? extractCellValue(cells[scoreIdx]).trim() : '';
-          const parsedScore = parseSetScore(scoreRaw);
+          const parsedScore = resolveSetScore(
+            cells,
+            scoreIdx !== -1 ? [scoreIdx, ...scoreIndexes.filter(idx => idx !== scoreIdx)] : scoreIndexes
+          );
           if (parsedScore) {
             if (winner && normalizeName(winner) === normalizeName(player1)) {
               p1Record = parsedScore.a;
