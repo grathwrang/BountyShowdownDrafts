@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AoE2 Bounty Overlay Viewer</title>
+  <style>
+  
+    :root {
+      --bg: rgba(7, 10, 16, 0.92);
+      --panel: rgba(20, 26, 38, 0.95);
+      --panel2: rgba(29, 37, 53, 0.95);
+      --text: #f3f6fb;
+      --muted: #aab4c8;
+      --accent: #6fb2ff;
+      --accent2: #ffd166;
+      --good: #61d095;
+      --bad: #ff7a7a;
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --parchment-text: #8C3500;
+      --parchment-text-soft: #8C3500;
+      --parchment-underline: rgba(140, 53, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      color: var(--text);
+    }
+
+    body {
+      background: radial-gradient(circle at top, rgba(50,70,100,0.35), transparent 30%), transparent;
+    }
+
+    .overlay {
+      width: 1920px;
+      height: 1080px;
+      padding: 28px;
+      display: grid;
+      grid-template-rows: 94px 1fr 86px;
+      gap: 18px;
+    }
+
+    .topbar, .footer, .panel, .history-card, .mini-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar {
+      border-radius: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 18px 24px;
+    }
+
+    .name {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .name.right { text-align: right; }
+    .center-status { text-align: center; }
+
+    .status-pill {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(111, 178, 255, 0.18);
+      border: 1px solid rgba(111, 178, 255, 0.35);
+      font-size: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+    }
+
+    .game-count {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 19px;
+      font-weight: 600;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1.05fr 0.9fr 1.05fr;
+      gap: 18px;
+      min-height: 0;
+    }
+
+ .panel {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-radius: 24px;
+  padding: 16px;
+  display: grid;
+  grid-template-rows: 64px 1fr 18px;
+  gap: 10px;
+  min-height: 0;
+  overflow: visible;
+}
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-header-inline {
+      align-items: flex-start;
+      margin-bottom: 0;
+      min-height: 64px;
+      max-height: 64px;
+      overflow: hidden;
+    }
+
+    .panel-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .panel-title-wrap-right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .panel-inline-meta {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .panel-inline-meta-right {
+      text-align: right;
+    }
+
+    .panel-title {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.1;
+      text-align: right;
+      max-width: 170px;
+    }
+
+    
+
+    .bounty-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-content: stretch;
+      justify-content: stretch;
+      overflow: hidden;
+      min-height: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .bounty-card {
+      position: relative;
+      border-radius: 16px;
+      padding: 30px 14px 10px 14px;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      border: 1px solid rgba(92, 61, 28, 0.28);
+      background-color: #e9ddb7;
+      background-image:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,0.34), transparent 24%),
+        radial-gradient(circle at 82% 26%, rgba(120, 83, 37, 0.10), transparent 20%),
+        radial-gradient(circle at 28% 78%, rgba(255,255,255,0.18), transparent 22%),
+        linear-gradient(180deg, rgba(255,248,222,0.82), rgba(223,204,156,0.88));
+      color: var(--parchment-text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -10px 20px rgba(120, 83, 37, 0.06), 0 6px 18px rgba(0,0,0,0.18);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      contain: layout paint;
+      aspect-ratio: 0.78 / 1;
+    }
+
+    .bounty-inner {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+.bounty-card.selected {
+  border-color: rgba(170, 20, 20, 1);
+  box-shadow:
+    0 0 0 4px rgba(130, 12, 12, 1),
+    0 0 18px rgba(150, 18, 18, 1),
+    0 0 36px rgba(125, 10, 10, 0.95),
+    0 0 64px rgba(100, 6, 6, 0.82),
+    0 0 96px rgba(78, 3, 3, 0.58),
+    0 0 130px rgba(55, 0, 0, 0.32),
+    inset 0 0 0 2px rgba(210, 90, 90, 0.3),
+    inset 0 1px 0 rgba(255,255,255,0.32),
+    inset 0 -10px 20px rgba(120, 83, 37, 0.06),
+    0 10px 24px rgba(0,0,0,0.24);
+  filter: saturate(1.08) brightness(1.03);
+  z-index: 2;
+}
+
+    .bounty-card.crossed::after {
+      content: '';
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      top: 50%;
+      height: 3px;
+      background: rgba(110, 38, 20, 0.72);
+      transform: rotate(-6deg);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
+      pointer-events: none;
+    }
+
+    .bounty-card.crossed::before {
+      content: '';
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      top: 50%;
+      height: 3px;
+      background: rgba(110, 38, 20, 0.56);
+      transform: rotate(5deg);
+      pointer-events: none;
+    }
+
+    .bounty-card.crossed .bounty-inner {
+      opacity: 0.72;
+    }
+
+    .bounty-card.placeholder {
+      opacity: 0.42;
+      border-style: dashed;
+    }
+
+    .bounty-title {
+	  font-family: 'WildBreathZelda', Inter, Segoe UI, Arial, sans-serif !important;
+	  font-size: 17px;
+	  font-weight: 800;
+	  line-height: 1.08;
+	  color: var(--parchment-text);
+	  display: inline-block;
+	  padding-bottom: 3px;
+	  border-bottom: 2px solid var(--parchment-underline);
+	  max-width: 100%;
+	  text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+	  word-break: break-word;
+	  text-size-adjust: none;
+	  -webkit-text-size-adjust: none;
+	}
+
+    .bounty-level {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      color: var(--parchment-text);
+      font-family: 'WildBreathZelda', Inter, Segoe UI, Arial, sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.16);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .bounty-id {
+      display: none;
+    }
+
+	.bounty-desc {
+	  font-family: 'WildBreathZelda', Inter, Segoe UI, Arial, sans-serif !important;
+	  margin-top: 0;
+	  color: var(--parchment-text);
+	  font-size: 13px;
+	  line-height: 1.12;
+	  text-shadow: 0 1px 0 rgba(255,255,255,0.14);
+	  word-break: break-word;
+	  overflow: visible;
+	  text-size-adjust: none;
+	  -webkit-text-size-adjust: none;
+	  flex: 0 0 auto;
+	  display: block;
+	  align-items: flex-start;
+	}
+
+    .selected-banner {
+      display: none;
+    }
+
+    .middle {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 18px;
+      min-height: 0;
+      align-content: start;
+    }
+
+    .loader-card {
+      border-radius: 20px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(45,55,78,0.98), rgba(27,34,48,0.98));
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .loader-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .loader-subtitle {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .loader-title {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .loader-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .loader-row-single {
+      display: block;
+    }
+
+    .loader-input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .loader-textarea {
+      width: 100%;
+      min-height: 130px;
+      resize: vertical;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      font-family: Consolas, Monaco, monospace;
+      line-height: 1.35;
+    }
+
+    .loader-file {
+      display: block;
+      width: 100%;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .loader-input::placeholder {
+      color: rgba(243,246,251,0.5);
+    }
+
+    .loader-button {
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(111, 178, 255, 0.18);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .loader-button:hover {
+      background: rgba(111, 178, 255, 0.28);
+    }
+
+    .loader-button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .loader-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .loader-status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 16px;
+    }
+
+    .history-card {
+      border-radius: 24px;
+      padding: 16px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .history-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+      overflow-y: auto;
+      max-height: 100%;
+      padding-right: 4px;
+    }
+
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .history-game {
+      font-size: 14px;
+      color: var(--accent2);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .history-matchup {
+      margin-top: 3px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .history-bounties {
+      margin-top: 6px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .big-pick {
+      border-radius: 20px;
+      padding: 16px;
+      background: transparent;
+      border: none;
+    }
+
+    .big-pick h3 {
+      margin: 0 0 8px 0;
+      font-size: 22px;
+    }
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.pick-column {
+  min-width: 0;
+}
+
+.pick-label {
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  margin-bottom: 8px;
+}
+
+#pickLeftCardHost,
+#pickRightCardHost {
+  min-height: 220px;
+}
+
+.current-pick-card {
+  width: 100%;
+  min-height: 220px;
+}
+
+    .controls { color: var(--muted); font-size: 18px; }
+    .phase-bounty { color: var(--accent2); }
+    .phase-history { color: var(--good); }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .error-banner {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: rgba(255, 122, 122, 0.16);
+      color: #ffd6d6;
+      border: 1px solid rgba(255, 122, 122, 0.4);
+      font-weight: 700;
+      z-index: 50;
+      max-width: 1200px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="errorBanner" class="error-banner" style="display:none"></div>
+
+  <div class="overlay">
+    <div class="topbar">
+      <div class="name" id="player1Name">Player 1</div>
+      <div class="center-status">
+        <div class="status-pill" id="statusPill">BOUNTY PHASE</div>
+        <div class="game-count" id="gameCount">Game 1</div>
+      </div>
+      <div class="name right" id="player2Name">Player 2</div>
+    </div>
+
+    <div class="content">
+      <section class="panel">
+        <div class="panel-header panel-header-inline">
+          <div class="panel-title-wrap">
+            <div class="panel-title" id="leftPanelTitle">Player 1</div>
+            <div class="panel-inline-meta" id="leftRefreshInline">Refreshes used: 0</div>
+          </div>
+          <div class="subtle" id="leftPoolLabel">Current options</div>
+        </div>
+        <div class="bounty-list" id="leftBounties"></div>
+        <div class="subtle" id="leftFooterNote">Use this for live bounty phase or game review.</div>
+      </section>
+
+      <section class="middle">
+        <div class="big-pick">
+          <h3>Current Bounties</h3>
+          <div class="pick-grid">
+  <div class="pick-column">
+    <div class="pick-label" id="pickLeftPlayerLabel">Player 1</div>
+    <div id="pickLeftCardHost"></div>
+  </div>
+  <div class="pick-column">
+    <div class="pick-label" id="pickRightPlayerLabel">Player 2</div>
+    <div id="pickRightCardHost"></div>
+  </div>
+</div>
+        </div>
+
+        <div class="loader-card">
+          <div class="loader-title">Load JSON</div>
+
+          <div class="loader-subtitle">From URL</div>
+          <div class="loader-row">
+            <input id="jsonUrlInput" class="loader-input" type="text" placeholder="https://example.com/overlay-data.json" />
+            <button id="loadJsonButton" class="loader-button" type="button">Load URL</button>
+          </div>
+
+          <div class="loader-section">
+            <div class="loader-subtitle">From local file</div>
+            <div class="loader-row-single">
+              <input id="jsonFileInput" class="loader-file" type="file" accept="application/json,.json" />
+            </div>
+          </div>
+
+          <div class="loader-section">
+            <div class="loader-subtitle">Paste raw JSON</div>
+            <textarea id="jsonPasteInput" class="loader-textarea" placeholder="Paste overlay JSON here..."></textarea>
+            <div class="loader-button-row">
+              <button id="loadPastedJsonButton" class="loader-button" type="button">Load Pasted JSON</button>
+              <button id="clearPastedJsonButton" class="loader-button" type="button">Clear</button>
+            </div>
+          </div>
+
+          <div id="jsonUrlStatus" class="loader-status">URL loading can fail because of CORS, mixed content, or file:// browser-source restrictions. File and paste loading are safer.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header panel-header-inline">
+          <div class="panel-title-wrap panel-title-wrap-right">
+            <div class="panel-title" id="rightPanelTitle" style="text-align:right; width:100%;">Player 2</div>
+            <div class="panel-inline-meta panel-inline-meta-right" id="rightRefreshInline">Refreshes used: 0</div>
+          </div>
+          <div class="subtle" id="rightPoolLabel">Current options</div>
+        </div>
+        <div class="bounty-list" id="rightBounties"></div>
+        <div class="subtle" id="rightFooterNote">Step through current phase or earlier games.</div>
+      </section>
+    </div>
+
+    <div class="footer">
+      <div id="modeLabel">Viewing: Current Bounty Phase</div>
+      <div class="controls">Keys: ← / → game • 0 = live/current • H = history mode</div>
+    </div>
+  </div>
+
+  <script>
+	const CUSTOM_FONT_URL = './The Wild Breath of Zelda.otf';
+
+	async function loadCustomFont() {
+		try {
+			const font = new FontFace(
+				'WildBreathZelda',
+				`url("${CUSTOM_FONT_URL}") format("opentype")`
+			);
+			await font.load();
+			document.fonts.add(font);
+			await document.fonts.load('16px "WildBreathZelda"');
+			console.log('WildBreathZelda loaded');
+			return true;
+		}   catch (err) {
+			console.error('WildBreathZelda failed to load:', err);
+			return false;
+		}
+	}
+    let rawData = {
+      sessionId: 'caa6b036-fb54-4ad6-aa22-6f9d296965f4',
+      playerNames: { player1: 'Wean Dinchester', player2: 'shiXo' },
+      gameNumber: 6,
+      status: 'bounty_phase',
+      refreshLimit: 3,
+      slotsOccupied: { player1: false, player2: false, admin: false },
+      player1: {
+        name: 'Wean Dinchester',
+        bounties: [
+          { id: 55, title: 'Religious Generosity', description: "Drop at least 3 relics within LOS of your opponent's starting TC + win" },
+          { id: 4, title: 'A Clean Victory', description: 'Win with 50+ Genitours/Elite Genitours alive at time of victory' },
+          { id: 27, title: 'Float Like a Butterfly', description: "Wall in an opponent's villager, win a 1v1 fight after the walls are up; your vill must be alive at time of victory and win" },
+          { id: 6, title: 'A Towering Achievement', description: 'Win with 25 Siege towers alive at time of victory' },
+          { id: 5, title: 'A Real All In', description: 'Delete your starting TC in Castle age + win. No Cumans and no additional TCs allowed.' }
+        ],
+        selectedBounty: null,
+        lockedIn: false,
+        refreshesUsed: 2
+      },
+      player2: {
+        name: 'shiXo',
+        bounties: [
+          { id: 62, title: 'The Ents', description: 'Produce only Trebuchets and villagers and win' },
+          { id: 22, title: 'Custom Renovations', description: 'Replace 5 enemy buildings with your own + win' },
+          { id: 66, title: 'The One Ring', description: 'Select a villager named "Frodo" to touch an enemy\'s TC (any) and survive and win' },
+          { id: 75, title: 'Wooden Allergy', description: 'Win without gathering wood' },
+          { id: 34, title: 'I Draw The Line', description: 'Win with a completed wall (walls and gates only) that touches parallel outsides of the map' }
+        ],
+        selectedBounty: null,
+        lockedIn: false,
+        refreshesUsed: 3
+      },
+      gameHistory: [
+        {
+          game: 1,
+          player1: { id: 10, title: 'And My Axe', description: 'Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win' },
+          player2: { id: 38, title: "Jeff's Strategy", description: 'Collect at least 1 stone from every stone pile on the map and win' },
+          player1Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 10, title: 'And My Axe', description: 'Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win' },
+                  { id: 63, title: 'The Friendly Stranger', description: 'Build a farm in visual range of the opponent, fully farm the farm and win' },
+                  { id: 70, title: 'Vegan Living', description: "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)" },
+                  { id: 71, title: 'Wallflower', description: 'All buildings must be on the outside edges of the map and win' },
+                  { id: 9, title: 'An Explosive Victory', description: 'Win producing only villagers and 2 or more petards and/or 2 or more flaming camels' },
+                  { id: 73, title: 'Wonderful Victory', description: 'Build a wonder in line of sight of the opponent and win' }
+                ],
+                lockedPool: [
+                  { id: 10, title: 'And My Axe', description: 'Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win', isPick: true },
+                  { id: 63, title: 'The Friendly Stranger', description: 'Build a farm in visual range of the opponent, fully farm the farm and win', isPick: false },
+                  { id: 70, title: 'Vegan Living', description: "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)", isPick: false },
+                  { id: 71, title: 'Wallflower', description: 'All buildings must be on the outside edges of the map and win', isPick: false },
+                  { id: 9, title: 'An Explosive Victory', description: 'Win producing only villagers and 2 or more petards and/or 2 or more flaming camels', isPick: false },
+                  { id: 73, title: 'Wonderful Victory', description: 'Build a wonder in line of sight of the opponent and win', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 10, title: 'And My Axe', description: 'Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win' },
+            refreshesUsedThisRound: 0,
+            refreshesRemainingAtLockIn: 3
+          },
+          player2Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 24, title: 'F It, Make War Elephants', description: 'Produce only war elephants (must make at least 2) and villagers and win' },
+                  { id: 1, title: '4 Towers and a funeral', description: "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win" },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win' },
+                  { id: 38, title: "Jeff's Strategy", description: 'Collect at least 1 stone from every stone pile on the map and win' },
+                  { id: 12, title: 'Archers Suck', description: 'Win as Spanish or Bulgarians with 60 foot archers alive at time of victory' },
+                  { id: 13, title: 'Basically a Trebuchet', description: 'Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win' }
+                ],
+                lockedPool: [
+                  { id: 24, title: 'F It, Make War Elephants', description: 'Produce only war elephants (must make at least 2) and villagers and win', isPick: false },
+                  { id: 1, title: '4 Towers and a funeral', description: "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win", isPick: false },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win', isPick: false },
+                  { id: 38, title: "Jeff's Strategy", description: 'Collect at least 1 stone from every stone pile on the map and win', isPick: true },
+                  { id: 12, title: 'Archers Suck', description: 'Win as Spanish or Bulgarians with 60 foot archers alive at time of victory', isPick: false },
+                  { id: 13, title: 'Basically a Trebuchet', description: 'Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 38, title: "Jeff's Strategy", description: 'Collect at least 1 stone from every stone pile on the map and win' },
+            refreshesUsedThisRound: 0,
+            refreshesRemainingAtLockIn: 3
+          }
+        },
+        {
+          game: 2,
+          player1: { id: 63, title: 'The Friendly Stranger', description: 'Build a farm in visual range of the opponent, fully farm the farm and win' },
+          player2: { id: 46, title: 'No Touching', description: 'No structures of any kind (excluding farms) are allowed to touch + win' },
+          player1Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 63, title: 'The Friendly Stranger', description: 'Build a farm in visual range of the opponent, fully farm the farm and win' },
+                  { id: 70, title: 'Vegan Living', description: "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)" },
+                  { id: 71, title: 'Wallflower', description: 'All buildings must be on the outside edges of the map and win' },
+                  { id: 9, title: 'An Explosive Victory', description: 'Win producing only villagers and 2 or more petards and/or 2 or more flaming camels' },
+                  { id: 73, title: 'Wonderful Victory', description: 'Build a wonder in line of sight of the opponent and win' }
+                ],
+                lockedPool: [
+                  { id: 63, title: 'The Friendly Stranger', description: 'Build a farm in visual range of the opponent, fully farm the farm and win', isPick: true },
+                  { id: 70, title: 'Vegan Living', description: "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)", isPick: false },
+                  { id: 71, title: 'Wallflower', description: 'All buildings must be on the outside edges of the map and win', isPick: false },
+                  { id: 9, title: 'An Explosive Victory', description: 'Win producing only villagers and 2 or more petards and/or 2 or more flaming camels', isPick: false },
+                  { id: 73, title: 'Wonderful Victory', description: 'Build a wonder in line of sight of the opponent and win', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 63, title: 'The Friendly Stranger', description: 'Build a farm in visual range of the opponent, fully farm the farm and win' },
+            refreshesUsedThisRound: 0,
+            refreshesRemainingAtLockIn: 3
+          },
+          player2Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 24, title: 'F It, Make War Elephants', description: 'Produce only war elephants (must make at least 2) and villagers and win' },
+                  { id: 1, title: '4 Towers and a funeral', description: "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win" },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win' },
+                  { id: 12, title: 'Archers Suck', description: 'Win as Spanish or Bulgarians with 60 foot archers alive at time of victory' },
+                  { id: 13, title: 'Basically a Trebuchet', description: 'Kill 5 military production buildings or 1 castle or 1 TC with only vilagers and win' }
+                ]
+              },
+              {
+                label: 'After Refresh 1',
+                pool: [
+                  { id: 47, title: 'NonAgrarian Society', description: 'Do not make any farm until imperial age and win' },
+                  { id: 46, title: 'No Touching', description: 'No structures of any kind (excluding farms) are allowed to touch + win' },
+                  { id: 16, title: 'Traitor Trading', description: 'Trade with enemy for a total of 500 gold and win' },
+                  { id: 31, title: 'Heroic Entrance', description: 'Produce a Hero as your first military unit and win' },
+                  { id: 12, title: 'Archers Suck', description: 'Win as Spanish or Bulgarians with 60 foot archers alive at time of victory' },
+                  { id: 1, title: '4 Towers and a funeral', description: "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win" }
+                ],
+                lockedPool: [
+                  { id: 47, title: 'NonAgrarian Society', description: 'Do not make any farm until imperial age and win', isPick: false },
+                  { id: 46, title: 'No Touching', description: 'No structures of any kind (excluding farms) are allowed to touch + win', isPick: true },
+                  { id: 16, title: 'Traitor Trading', description: 'Trade with enemy for a total of 500 gold and win', isPick: false },
+                  { id: 31, title: 'Heroic Entrance', description: 'Produce a Hero as your first military unit and win', isPick: false },
+                  { id: 12, title: 'Archers Suck', description: 'Win as Spanish or Bulgarians with 60 foot archers alive at time of victory', isPick: false },
+                  { id: 1, title: '4 Towers and a funeral', description: "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win", isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 46, title: 'No Touching', description: 'No structures of any kind (excluding farms) are allowed to touch + win' },
+            refreshesUsedThisRound: 1,
+            refreshesRemainingAtLockIn: 2
+          }
+        },
+        {
+          game: 3,
+          player1: { id: 52, title: 'Quartering Troops', description: 'All new houses must connect directly to a military building after 6 villagers and win' },
+          player2: { id: 35, title: 'Inclined To Build', description: 'Houses may only be placed on hills or elevations and win (no Huns)' },
+          player1Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 70, title: 'Vegan Living', description: "Don't kill any creature (not including the opponent's units) and win (no Khmer, no Gurjaras)" },
+                  { id: 71, title: 'Wallflower', description: 'All buildings must be on the outside edges of the map and win' },
+                  { id: 9, title: 'An Explosive Victory', description: 'Win producing only villagers and 2 or more petards and/or 2 or more flaming camels' },
+                  { id: 73, title: 'Wonderful Victory', description: 'Build a wonder in line of sight of the opponent and win' }
+                ]
+              },
+              {
+                label: 'After Refresh 1',
+                pool: [
+                  { id: 43, title: 'Militaristic Society2: Electric Boogaloo', description: 'Win without any villagers alive at time of victory (No Burgundians)' },
+                  { id: 52, title: 'Quartering Troops', description: 'All new houses must connect directly to a military building after 6 villagers and win' },
+                  { id: 53, title: 'Quit Milling About!', description: 'The first two buildings constructed must be mills (no huns) and win' },
+                  { id: 28, title: 'Garbage Garbage', description: 'Produce only spears, skirms, siege units and villagers as the Turks and win' },
+                  { id: 56, title: 'Rocket the Kasbah', description: 'Produce only Rocket Carts and villagers and win' },
+                  { id: 57, title: "Santa's Reindeer", description: 'Collect 8 deer in a single pen and win' }
+                ],
+                lockedPool: [
+                  { id: 43, title: 'Militaristic Society2: Electric Boogaloo', description: 'Win without any villagers alive at time of victory (No Burgundians)', isPick: false },
+                  { id: 52, title: 'Quartering Troops', description: 'All new houses must connect directly to a military building after 6 villagers and win', isPick: true },
+                  { id: 53, title: 'Quit Milling About!', description: 'The first two buildings constructed must be mills (no huns) and win', isPick: false },
+                  { id: 28, title: 'Garbage Garbage', description: 'Produce only spears, skirms, siege units and villagers as the Turks and win', isPick: false },
+                  { id: 56, title: 'Rocket the Kasbah', description: 'Produce only Rocket Carts and villagers and win', isPick: false },
+                  { id: 57, title: "Santa's Reindeer", description: 'Collect 8 deer in a single pen and win', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 52, title: 'Quartering Troops', description: 'All new houses must connect directly to a military building after 6 villagers and win' },
+            refreshesUsedThisRound: 1,
+            refreshesRemainingAtLockIn: 2
+          },
+          player2Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 47, title: 'NonAgrarian Society', description: 'Do not make any farm until imperial age and win' },
+                  { id: 16, title: 'Traitor Trading', description: 'Trade with enemy for a total of 500 gold and win' },
+                  { id: 31, title: 'Heroic Entrance', description: 'Produce a Hero as your first military unit and win' },
+                  { id: 12, title: 'Archers Suck', description: 'Win as Spanish or Bulgarians with 60 foot archers alive at time of victory' },
+                  { id: 1, title: '4 Towers and a funeral', description: "Build a tower in all the exact 4 corners of the map, delete your civ's highest value unit (total resource amount) and win" }
+                ]
+              },
+              {
+                label: 'After Refresh 1',
+                pool: [
+                  { id: 35, title: 'Inclined To Build', description: 'Houses may only be placed on hills or elevations and win (no Huns)' },
+                  { id: 50, title: 'Poor City Planning', description: 'Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win' },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win' },
+                  { id: 51, title: 'Public Transportation', description: 'Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win' },
+                  { id: 58, title: 'Spelling Rocks', description: "Legibly spell your opponent's name (or grathwrang) in stone walls and win" },
+                  { id: 74, title: 'Wonderwall', description: 'Win with a completed wall around your starting TC that includes a wonder' }
+                ],
+                lockedPool: [
+                  { id: 35, title: 'Inclined To Build', description: 'Houses may only be placed on hills or elevations and win (no Huns)', isPick: true },
+                  { id: 50, title: 'Poor City Planning', description: 'Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win', isPick: false },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win', isPick: false },
+                  { id: 51, title: 'Public Transportation', description: 'Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win', isPick: false },
+                  { id: 58, title: 'Spelling Rocks', description: "Legibly spell your opponent's name (or grathwrang) in stone walls and win", isPick: false },
+                  { id: 74, title: 'Wonderwall', description: 'Win with a completed wall around your starting TC that includes a wonder', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 35, title: 'Inclined To Build', description: 'Houses may only be placed on hills or elevations and win (no Huns)' },
+            refreshesUsedThisRound: 1,
+            refreshesRemainingAtLockIn: 1
+          }
+        },
+        {
+          game: 4,
+          player1: { id: 53, title: 'Quit Milling About!', description: 'The first two buildings constructed must be mills (no huns) and win' },
+          player2: { id: 50, title: 'Poor City Planning', description: 'Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win' },
+          player1Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 43, title: 'Militaristic Society2: Electric Boogaloo', description: 'Win without any villagers alive at time of victory (No Burgundians)' },
+                  { id: 53, title: 'Quit Milling About!', description: 'The first two buildings constructed must be mills (no huns) and win' },
+                  { id: 28, title: 'Garbage Garbage', description: 'Produce only spears, skirms, siege units and villagers as the Turks and win' },
+                  { id: 56, title: 'Rocket the Kasbah', description: 'Produce only Rocket Carts and villagers and win' },
+                  { id: 57, title: "Santa's Reindeer", description: 'Collect 8 deer in a single pen and win' }
+                ],
+                lockedPool: [
+                  { id: 43, title: 'Militaristic Society2: Electric Boogaloo', description: 'Win without any villagers alive at time of victory (No Burgundians)', isPick: false },
+                  { id: 53, title: 'Quit Milling About!', description: 'The first two buildings constructed must be mills (no huns) and win', isPick: true },
+                  { id: 28, title: 'Garbage Garbage', description: 'Produce only spears, skirms, siege units and villagers as the Turks and win', isPick: false },
+                  { id: 56, title: 'Rocket the Kasbah', description: 'Produce only Rocket Carts and villagers and win', isPick: false },
+                  { id: 57, title: "Santa's Reindeer", description: 'Collect 8 deer in a single pen and win', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 53, title: 'Quit Milling About!', description: 'The first two buildings constructed must be mills (no huns) and win' },
+            refreshesUsedThisRound: 0,
+            refreshesRemainingAtLockIn: 2
+          },
+          player2Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 50, title: 'Poor City Planning', description: 'Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win' },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win' },
+                  { id: 51, title: 'Public Transportation', description: 'Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win' },
+                  { id: 58, title: 'Spelling Rocks', description: "Legibly spell your opponent's name (or grathwrang) in stone walls and win" },
+                  { id: 74, title: 'Wonderwall', description: 'Win with a completed wall around your starting TC that includes a wonder' }
+                ],
+                lockedPool: [
+                  { id: 50, title: 'Poor City Planning', description: 'Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win', isPick: true },
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win', isPick: false },
+                  { id: 51, title: 'Public Transportation', description: 'Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win', isPick: false },
+                  { id: 58, title: 'Spelling Rocks', description: "Legibly spell your opponent's name (or grathwrang) in stone walls and win", isPick: false },
+                  { id: 74, title: 'Wonderwall', description: 'Win with a completed wall around your starting TC that includes a wonder', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 50, title: 'Poor City Planning', description: 'Every building you build must connect to your starting Town Center or a building connected to your starting Town Center etc, (no gates), and win' },
+            refreshesUsedThisRound: 0,
+            refreshesRemainingAtLockIn: 1
+          }
+        },
+        {
+          game: 5,
+          player1: { id: 3, title: 'A Barrel of Scorpions 2', description: 'Produce only scorpions (must make at least 2) and villagers and win' },
+          player2: { id: 18, title: 'Build It Nice Build It Twice', description: 'All buildings must be built touching in pairs + win' },
+          player1Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 43, title: 'Militaristic Society2: Electric Boogaloo', description: 'Win without any villagers alive at time of victory (No Burgundians)' },
+                  { id: 28, title: 'Garbage Garbage', description: 'Produce only spears, skirms, siege units and villagers as the Turks and win' },
+                  { id: 56, title: 'Rocket the Kasbah', description: 'Produce only Rocket Carts and villagers and win' },
+                  { id: 57, title: "Santa's Reindeer", description: 'Collect 8 deer in a single pen and win' }
+                ]
+              },
+              {
+                label: 'After Refresh 1',
+                pool: [
+                  { id: 3, title: 'A Barrel of Scorpions 2', description: 'Produce only scorpions (must make at least 2) and villagers and win' },
+                  { id: 55, title: 'Religious Generosity', description: "Drop at least 3 relics within LOS of your opponent's starting TC + win" },
+                  { id: 4, title: 'A Clean Victory', description: 'Win with 50+ Genitours/Elite Genitours alive at time of victory' },
+                  { id: 27, title: 'Float Like a Butterfly', description: "Wall in an opponent's villager, win a 1v1 fight after the walls are up; your vill must be alive at time of victory and win" },
+                  { id: 6, title: 'A Towering Achievement', description: 'Win with 25 Siege towers alive at time of victory' },
+                  { id: 5, title: 'A Real All In', description: 'Delete your starting TC in Castle age + win. No Cumans and no additional TCs allowed.' }
+                ],
+                lockedPool: [
+                  { id: 3, title: 'A Barrel of Scorpions 2', description: 'Produce only scorpions (must make at least 2) and villagers and win', isPick: true },
+                  { id: 55, title: 'Religious Generosity', description: "Drop at least 3 relics within LOS of your opponent's starting TC + win", isPick: false },
+                  { id: 4, title: 'A Clean Victory', description: 'Win with 50+ Genitours/Elite Genitours alive at time of victory', isPick: false },
+                  { id: 27, title: 'Float Like a Butterfly', description: "Wall in an opponent's villager, win a 1v1 fight after the walls are up; your vill must be alive at time of victory and win", isPick: false },
+                  { id: 6, title: 'A Towering Achievement', description: 'Win with 25 Siege towers alive at time of victory', isPick: false },
+                  { id: 5, title: 'A Real All In', description: 'Delete your starting TC in Castle age + win. No Cumans and no additional TCs allowed.', isPick: false }
+                ]
+              }
+            ],
+            pick: { id: 3, title: 'A Barrel of Scorpions 2', description: 'Produce only scorpions (must make at least 2) and villagers and win' },
+            refreshesUsedThisRound: 1,
+            refreshesRemainingAtLockIn: 1
+          },
+          player2Detail: {
+            poolSnapshots: [
+              {
+                label: 'Initial Pool',
+                pool: [
+                  { id: 36, title: 'Inefficient Construction', description: 'All resource camps must be built touching the wrong resource + win' },
+                  { id: 51, title: 'Public Transportation', description: 'Do a lap around the entire edge of the map with a garrisoned ram, leave one unit in each corner and win' },
+                  { id: 58, title: 'Spelling Rocks', description: "Legibly spell your opponent's name (or grathwrang) in stone walls and win" },
+                  { id: 74, title: 'Wonderwall', description: 'Win with a completed wall around your starting TC that includes a wonder' }
+                ]
+              },
+              {
+                label: 'After Refresh 1',
+                pool: [
+                  { id: 62, title: 'The Ents', description: 'Produce only Trebuchets and villagers and win' },
+                  { id: 22, title: 'Custom Renovations', description: 'Replace 5 enemy buildings with your own + win' },
+                  { id: 66, title: 'The One Ring', description: 'Select a villager named "Frodo" to touch an enemy\'s TC (any) and survive and win' },
+                  { id: 75, title: 'Wooden Allergy', description: 'Win without gathering wood' },
+                  { id: 34, title: 'I Draw The Line', description: 'Win with a completed wall (walls and gates only) that touches parallel outsides of the map' },
+                  { id: 18, title: 'Build It Nice Build It Twice', description: 'All buildings must be built touching in pairs + win' }
+                ],
+                lockedPool: [
+                  { id: 62, title: 'The Ents', description: 'Produce only Trebuchets and villagers and win', isPick: false },
+                  { id: 22, title: 'Custom Renovations', description: 'Replace 5 enemy buildings with your own + win', isPick: false },
+                  { id: 66, title: 'The One Ring', description: 'Select a villager named "Frodo" to touch an enemy\'s TC (any) and survive and win', isPick: false },
+                  { id: 75, title: 'Wooden Allergy', description: 'Win without gathering wood', isPick: false },
+                  { id: 34, title: 'I Draw The Line', description: 'Win with a completed wall (walls and gates only) that touches parallel outsides of the map', isPick: false },
+                  { id: 18, title: 'Build It Nice Build It Twice', description: 'All buildings must be built touching in pairs + win', isPick: true }
+                ]
+              }
+            ],
+            pick: { id: 18, title: 'Build It Nice Build It Twice', description: 'All buildings must be built touching in pairs + win' },
+            refreshesUsedThisRound: 1,
+            refreshesRemainingAtLockIn: 0
+          }
+        }
+      ],
+      remainingPool: 65
+    };
+
+    let currentIndex = -1;
+    let historyMode = false;
+
+    const el = (id) => document.getElementById(id);
+
+    function showError(message) {
+      const banner = el('errorBanner');
+      banner.textContent = message;
+      banner.style.display = 'block';
+    }
+
+    function clearError() {
+      const banner = el('errorBanner');
+      banner.textContent = '';
+      banner.style.display = 'none';
+    }
+
+    function setJsonUrlStatus(message, tone = 'normal') {
+      const status = el('jsonUrlStatus');
+      if (!status) return;
+      status.textContent = message;
+      status.style.color = tone === 'error' ? '#ffb3b3' : tone === 'success' ? '#9ee6b7' : 'var(--muted)';
+    }
+
+    function shortTitle(b) {
+      return b?.title ? (b.title.length > 18 ? b.title.slice(0, 16) + '…' : b.title) : '—';
+    }
+
+    function phaseLabel(status) {
+      return String(status || '').replaceAll('_', ' ').toUpperCase();
+    }
+
+    function makeBountyCard(bounty, options = {}) {
+      const { isSelected = false, isCrossed = false } = options;
+      const div = document.createElement('div');
+      const isPlaceholder = !bounty || bounty.placeholder;
+      div.className = 'bounty-card' + (isSelected ? ' selected' : '') + (isCrossed ? ' crossed' : '') + (isPlaceholder ? ' placeholder' : '');
+
+      const title = bounty?.title ?? 'Empty Slot';
+      const description = bounty?.description ?? 'No bounty in this slot.';
+
+      const rawLevel = bounty?.level ?? bounty?.Level ?? bounty?.bountyLevel ?? bounty?.bounty_level;
+      const parsedLevel = Number.parseInt(rawLevel, 10);
+      const level = Number.isFinite(parsedLevel) ? parsedLevel : null;
+      const levelLabelMap = { 1: 'I', 2: 'II', 3: 'III' };
+      const levelLabel = level !== null ? (levelLabelMap[level] ?? String(level)) : null;
+      const levelMarkup = levelLabel ? `<div class="bounty-level">${levelLabel}</div>` : '';
+
+      div.innerHTML = `
+        ${levelMarkup}
+        <div class="bounty-inner">
+          <div class="bounty-title">${title}</div>
+          <div class="bounty-desc">${description}</div>
+        </div>
+      `;
+      
+      return div;
+    }
+
+    function normalizeToSixBounties(bounties) {
+      const list = Array.isArray(bounties) ? [...bounties] : [];
+      while (list.length < 6) {
+        list.push({ placeholder: true, id: '—', title: 'Empty Slot', description: 'No bounty in this slot.' });
+      }
+      return list.slice(0, 6);
+    }
+
+    function setList(containerId, bounties, selectedId = null, crossedIds = []) {
+      const container = el(containerId);
+      container.innerHTML = '';
+      const normalized = normalizeToSixBounties(bounties);
+      const crossedSet = new Set(crossedIds);
+      normalized.forEach((b) => {
+        container.appendChild(makeBountyCard(b, {
+          isSelected: b?.id === selectedId,
+          isCrossed: crossedSet.has(b?.id)
+        }));
+      });
+    }
+
+function setPickBox(side, playerName, pick) {
+  const labelId = side === 'left' ? 'pickLeftPlayerLabel' : 'pickRightPlayerLabel';
+  const hostId = side === 'left' ? 'pickLeftCardHost' : 'pickRightCardHost';
+
+  el(labelId).textContent = playerName || 'Unknown Player';
+
+  const host = el(hostId);
+  if (!host) return;
+
+  host.innerHTML = '';
+
+  const cardData = pick
+    ? { ...pick }
+    : { placeholder: true, id: '—', title: 'No pick yet', description: 'Waiting for selection.' };
+
+  const card = makeBountyCard(cardData, {
+    isSelected: false,
+    isCrossed: false
+  });
+
+  card.classList.add('current-pick-card');
+  host.appendChild(card);
+}
+
+   function fitBountyCard(card) {
+  const inner = card.querySelector('.bounty-inner');
+  const title = card.querySelector('.bounty-title');
+  const desc = card.querySelector('.bounty-desc');
+  if (!inner || !title || !desc) return;
+
+  const availableHeight = inner.clientHeight || card.clientHeight;
+  if (!availableHeight || availableHeight < 24) return;
+
+  const isPlaceholder = card.classList.contains('placeholder');
+
+  const titleMin = isPlaceholder ? 10 : 11;
+  const titleMax = isPlaceholder ? 14 : 30;
+
+  const descMin = isPlaceholder ? 8 : 11;
+  const descMax = isPlaceholder ? 10 : 30;
+
+  const titleLine = isPlaceholder ? 1.0 : 1.02;
+  const descLine = isPlaceholder ? 1.08 : 1.12;
+
+  function applySizes(titleSize, descSize) {
+    title.style.fontSize = `${titleSize}px`;
+    title.style.lineHeight = `${titleLine}`;
+    desc.style.fontSize = `${descSize}px`;
+    desc.style.lineHeight = `${descLine}`;
+  }
+
+  function fits(titleSize, descSize) {
+    applySizes(titleSize, descSize);
+    return inner.scrollHeight <= availableHeight;
+  }
+
+  let bestTitle = titleMin;
+  let bestDesc = descMin;
+
+  // Start from a reasonable baseline
+  applySizes(bestTitle, bestDesc);
+
+  // First, grow the title a bit, but prioritize description space
+  for (let t = titleMin; t <= titleMax; t += 0.5) {
+    if (fits(t, descMin)) {
+      bestTitle = t;
+    } else {
+      break;
+    }
+  }
+
+  // Then maximize description size with that title
+  for (let d = descMin; d <= descMax; d += 0.5) {
+    if (fits(bestTitle, d)) {
+      bestDesc = d;
+    } else {
+      break;
+    }
+  }
+
+  // Now try to grow both together a little more if possible
+  let improved = true;
+  while (improved) {
+    improved = false;
+
+    if (bestDesc + 0.5 <= descMax && fits(bestTitle, bestDesc + 0.5)) {
+      bestDesc += 0.5;
+      improved = true;
+    }
+
+    if (bestTitle + 0.5 <= titleMax && fits(bestTitle + 0.5, bestDesc)) {
+      bestTitle += 0.5;
+      improved = true;
+    }
+  }
+
+  // Final apply
+  applySizes(bestTitle, bestDesc);
+}
+
+    function fitAllBountyCards() {
+  document.querySelectorAll('.bounty-card').forEach((card) => fitBountyCard(card));
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.bounty-card').forEach((card) => fitBountyCard(card));
+  });
+}
+    
+
+    function renderSummary() {
+      return;
+    }
+
+    function renderHistoryList(highlightGameNumber = null) {
+      return;
+    }
+
+    function renderCurrentPhase() {
+      historyMode = false;
+      el('player1Name').textContent = rawData.player1.name || rawData.playerNames.player1;
+      el('player2Name').textContent = rawData.player2.name || rawData.playerNames.player2;
+      el('leftPanelTitle').textContent = rawData.player1.name || rawData.playerNames.player1;
+      el('rightPanelTitle').textContent = rawData.player2.name || rawData.playerNames.player2;
+      el('leftRefreshInline').textContent = `Refreshes used: ${rawData.player1.refreshesUsed ?? 0}`;
+      el('rightRefreshInline').textContent = `Refreshes used: ${rawData.player2.refreshesUsed ?? 0}`;
+      el('statusPill').textContent = phaseLabel(rawData.status);
+      el('gameCount').textContent = `Game ${rawData.gameNumber} • Live Phase`;
+      el('modeLabel').innerHTML = 'Viewing: <span class="phase-bounty">Current Bounty Phase</span>';
+      el('leftPoolLabel').textContent = 'Current options';
+      el('rightPoolLabel').textContent = 'Current options';
+
+      setList('leftBounties', rawData.player1.bounties, rawData.player1.selectedBounty?.id ?? null);
+      setList('rightBounties', rawData.player2.bounties, rawData.player2.selectedBounty?.id ?? null);
+      setPickBox('left', rawData.player1.name, rawData.player1.selectedBounty);
+      setPickBox('right', rawData.player2.name, rawData.player2.selectedBounty);
+      renderHistoryList(null);
+    }
+
+    function getInitialPoolFromHistoryGame(game, playerKey) {
+      const detail = game?.[playerKey + 'Detail'];
+      const firstSnapshot = detail?.poolSnapshots?.[0];
+      const pool = firstSnapshot?.pool || firstSnapshot?.lockedPool || [];
+      return normalizeToSixBounties(pool.map((b) => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        level: b.level ?? b.Level ?? b.bountyLevel ?? b.bounty_level
+      })));
+    }
+
+    function renderGameZero() {
+      const firstGame = rawData.gameHistory?.[0];
+      if (!firstGame) {
+        renderCurrentPhase();
+        return;
+      }
+
+      historyMode = true;
+      el('player1Name').textContent = rawData.playerNames.player1;
+      el('player2Name').textContent = rawData.playerNames.player2;
+      el('leftPanelTitle').textContent = rawData.playerNames.player1;
+      el('rightPanelTitle').textContent = rawData.playerNames.player2;
+      el('leftRefreshInline').textContent = 'Refreshes used: 0';
+      el('rightRefreshInline').textContent = 'Refreshes used: 0';
+      el('statusPill').textContent = 'PRE-PICK VIEW';
+      el('gameCount').textContent = 'Game 0 • Before Game 1 Picks';
+      el('modeLabel').innerHTML = 'Viewing: <span class="phase-history">Pre-pick pools</span>';
+      el('leftPoolLabel').textContent = 'Initial pool before Game 1';
+      el('rightPoolLabel').textContent = 'Initial pool before Game 1';
+
+      const p1Pool = getInitialPoolFromHistoryGame(firstGame, 'player1');
+      const p2Pool = getInitialPoolFromHistoryGame(firstGame, 'player2');
+
+      setList('leftBounties', p1Pool, null, []);
+      setList('rightBounties', p2Pool, null, []);
+      setPickBox('left', rawData.playerNames.player1, null);
+      setPickBox('right', rawData.playerNames.player2, null);
+      renderHistoryList(null);
+    }
+
+    function bestPoolFromDetail(detailObj, chosenId) {
+      if (!detailObj?.poolSnapshots?.length) return [];
+
+      const lockedSnapshot = [...detailObj.poolSnapshots]
+        .reverse()
+        .find((snapshot) => Array.isArray(snapshot.lockedPool) && snapshot.lockedPool.length);
+
+      if (lockedSnapshot) {
+        return lockedSnapshot.lockedPool.map((x) => ({
+          id: x.id,
+          title: x.title,
+          description: x.description,
+          level: x.level ?? x.Level ?? x.bountyLevel ?? x.bounty_level,
+          isPick: Boolean(x.isPick)
+        }));
+      }
+
+      const latest = detailObj.poolSnapshots[detailObj.poolSnapshots.length - 1];
+      return (latest.pool || []).map((x) => ({ ...x, level: x.level ?? x.Level ?? x.bountyLevel ?? x.bounty_level, isPick: x.id === chosenId }));
+    }
+
+    function buildHistoryDisplayPools(playerKey) {
+      const rounds = [];
+      let previousDisplay = Array(6).fill(null);
+      const previouslyUsedIds = new Set();
+
+      rawData.gameHistory.forEach((game) => {
+        const currentPick = game[playerKey];
+        const detailKey = playerKey + 'Detail';
+        const detail = game[detailKey];
+        const currentPool = bestPoolFromDetail(detail, currentPick?.id)
+          .map((b) => ({ id: b.id, title: b.title, description: b.description, level: b.level ?? b.Level ?? b.bountyLevel ?? b.bounty_level }));
+
+        if (rounds.length === 0) {
+          const firstRound = normalizeToSixBounties(currentPool).map((b) => ({ ...b }));
+          rounds.push(firstRound);
+          previousDisplay = firstRound.map((b) => (b?.placeholder ? null : { id: b.id, title: b.title, description: b.description, level: b.level }));
+          if (currentPick?.id != null) previouslyUsedIds.add(currentPick.id);
+          return;
+        }
+
+        const hadRefreshThisRound = (detail?.refreshesUsedThisRound ?? 0) > 0;
+
+        if (hadRefreshThisRound) {
+          const refreshedRound = normalizeToSixBounties(currentPool).map((b) => ({ ...b }));
+          rounds.push(refreshedRound);
+          previousDisplay = refreshedRound.map((b) => (b?.placeholder ? null : { id: b.id, title: b.title, description: b.description, level: b.level }));
+          if (currentPick?.id != null) previouslyUsedIds.add(currentPick.id);
+          return;
+        }
+
+        const nextDisplay = Array(6).fill(null);
+        const poolById = new Map(currentPool.map((b) => [b.id, b]));
+        const placedIds = new Set();
+
+        previousDisplay.forEach((oldCard, index) => {
+          if (!oldCard?.id) return;
+
+          if (previouslyUsedIds.has(oldCard.id) && oldCard.id !== currentPick?.id) {
+            nextDisplay[index] = { ...oldCard, crossed: true };
+            placedIds.add(oldCard.id);
+            return;
+          }
+
+          if (poolById.has(oldCard.id)) {
+            nextDisplay[index] = { ...poolById.get(oldCard.id) };
+            placedIds.add(oldCard.id);
+          }
+        });
+
+        currentPool.forEach((b) => {
+          if (placedIds.has(b.id)) return;
+          const emptyIndex = nextDisplay.findIndex((slot) => slot === null);
+          if (emptyIndex !== -1) {
+            nextDisplay[emptyIndex] = { ...b };
+            placedIds.add(b.id);
+          }
+        });
+
+        for (let i = 0; i < nextDisplay.length; i += 1) {
+          if (nextDisplay[i] === null) {
+            nextDisplay[i] = { placeholder: true, id: '—', title: 'Empty Slot', description: 'No bounty in this slot.' };
+          }
+        }
+
+        rounds.push(nextDisplay);
+        previousDisplay = nextDisplay.map((b) => (b?.placeholder ? null : { id: b.id, title: b.title, description: b.description, level: b.level }));
+        if (currentPick?.id != null) previouslyUsedIds.add(currentPick.id);
+      });
+
+      return rounds;
+    }
+
+    let historyDisplayPools = {
+      player1: buildHistoryDisplayPools('player1'),
+      player2: buildHistoryDisplayPools('player2')
+    };
+
+    function rebuildDerivedState() {
+      historyDisplayPools = {
+        player1: buildHistoryDisplayPools('player1'),
+        player2: buildHistoryDisplayPools('player2')
+      };
+      currentIndex = -1;
+      historyMode = true;
+    }
+function getCumulativeRefreshesThroughGame(index, playerKey) {
+  let total = 0;
+
+  for (let i = 0; i <= index; i += 1) {
+    const game = rawData.gameHistory?.[i];
+    if (!game) continue;
+    const detail = game[playerKey + 'Detail'];
+    total += detail?.refreshesUsedThisRound ?? 0;
+  }
+
+  return total;
+}
+    function renderHistoryGame(index) {
+      const game = rawData.gameHistory[index];
+      if (!game) {
+        renderCurrentPhase();
+        return;
+      }
+
+      historyMode = true;
+      el('player1Name').textContent = rawData.playerNames.player1;
+      el('player2Name').textContent = rawData.playerNames.player2;
+      el('leftPanelTitle').textContent = rawData.playerNames.player1;
+      el('rightPanelTitle').textContent = rawData.playerNames.player2;
+     el('leftRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshesThroughGame(index, 'player1')}`;
+el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshesThroughGame(index, 'player2')}`;
+      el('statusPill').textContent = 'GAME REVIEW';
+      el('gameCount').textContent = `Game ${game.game} of ${rawData.gameHistory.length}`;
+      el('modeLabel').innerHTML = 'Viewing: <span class="phase-history">Completed Game</span>';
+      el('leftPoolLabel').textContent = 'Locked pool that round';
+      el('rightPoolLabel').textContent = 'Locked pool that round';
+
+      const p1Pool = historyDisplayPools.player1[index] || normalizeToSixBounties([]);
+      const p2Pool = historyDisplayPools.player2[index] || normalizeToSixBounties([]);
+
+      const p1CrossedIds = p1Pool.filter((b) => b?.crossed).map((b) => b.id);
+      const p2CrossedIds = p2Pool.filter((b) => b?.crossed).map((b) => b.id);
+
+      setList('leftBounties', p1Pool, game.player1?.id ?? null, p1CrossedIds);
+      setList('rightBounties', p2Pool, game.player2?.id ?? null, p2CrossedIds);
+      setPickBox('left', rawData.playerNames.player1, game.player1);
+      setPickBox('right', rawData.playerNames.player2, game.player2);
+      renderHistoryList(game.game);
+    }
+
+    function render() {
+      renderSummary();
+      if (currentIndex === -1) {
+        renderGameZero();
+      } else if (currentIndex >= rawData.gameHistory.length) {
+        renderCurrentPhase();
+      } else {
+        renderHistoryGame(currentIndex);
+      }
+      requestAnimationFrame(() => fitAllBountyCards());
+    }
+
+    function validateOverlayDataShape(data) {
+      if (!data || typeof data !== 'object') throw new Error('JSON did not contain an object.');
+      if (!data.playerNames?.player1 || !data.playerNames?.player2) throw new Error('Missing playerNames.player1/player2.');
+      if (!Array.isArray(data.gameHistory)) throw new Error('Missing gameHistory array.');
+      if (!data.player1 || !data.player2) throw new Error('Missing player1/player2 objects.');
+      if (!Array.isArray(data.player1.bounties) || !Array.isArray(data.player2.bounties)) throw new Error('Missing player bounty arrays.');
+    }
+
+    function applyOverlayData(data, sourceLabel = 'JSON') {
+      validateOverlayDataShape(data);
+      rawData = data;
+      rebuildDerivedState();
+      render();
+      setJsonUrlStatus(`${sourceLabel} loaded successfully.`, 'success');
+      clearError();
+    }
+
+    function explainFetchFailure(url) {
+      const isFilePage = window.location.protocol === 'file:';
+      const isHttpUrl = /^http:\/\//i.test(url);
+      const isHttpsUrl = /^https:\/\//i.test(url);
+
+      if (isFilePage && (isHttpUrl || isHttpsUrl)) {
+        return 'The browser source is likely running from file:// and the remote site is blocking CORS. Use a local file, pasted JSON, or host both files on the same web server.';
+      }
+      if (window.location.protocol === 'https:' && isHttpUrl) {
+        return 'This looks like mixed content: an HTTPS page cannot fetch an HTTP JSON URL. Use HTTPS for the JSON URL.';
+      }
+      return 'The URL may be blocked by CORS, may not allow direct browser access, or may not be reachable from this browser source.';
+    }
+
+    async function loadDataFromUrl(url) {
+      const trimmedUrl = String(url || '').trim();
+      if (!trimmedUrl) {
+        setJsonUrlStatus('Enter a JSON URL first.', 'error');
+        return;
+      }
+
+      const button = el('loadJsonButton');
+      const input = el('jsonUrlInput');
+      try {
+        clearError();
+        setJsonUrlStatus('Loading JSON from URL…');
+        if (button) button.disabled = true;
+        if (input) input.disabled = true;
+
+        const response = await fetch(trimmedUrl, { cache: 'no-store', mode: 'cors' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} while loading JSON.`);
+        }
+
+        let data;
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          throw new Error('Response was not valid JSON.');
+        }
+
+        applyOverlayData(data, 'URL JSON');
+
+        try {
+          localStorage.setItem('aoe2_overlay_json_url', trimmedUrl);
+        } catch (storageError) {
+          console.warn('Could not persist JSON URL', storageError);
+        }
+      } catch (error) {
+        console.error(error);
+        const extra = error?.message === 'Failed to fetch' ? ` ${explainFetchFailure(trimmedUrl)}` : '';
+        showError(`JSON load failed: ${error.message}.${extra}`.replace('..', '.'));
+        setJsonUrlStatus(`Load failed: ${error.message}.${extra}`.replace('..', '.'), 'error');
+      } finally {
+        if (button) button.disabled = false;
+        if (input) input.disabled = false;
+      }
+    }
+
+    function loadDataFromText(text, sourceLabel = 'Pasted JSON') {
+      try {
+        clearError();
+        if (!String(text || '').trim()) {
+          throw new Error('No JSON text was provided.');
+        }
+        const data = JSON.parse(text);
+        applyOverlayData(data, sourceLabel);
+      } catch (error) {
+        console.error(error);
+        showError(`JSON load failed: ${error.message}`);
+        setJsonUrlStatus(`Load failed: ${error.message}`, 'error');
+      }
+    }
+
+    async function loadDataFromFile(file) {
+      if (!file) {
+        setJsonUrlStatus('Choose a JSON file first.', 'error');
+        return;
+      }
+      try {
+        clearError();
+        setJsonUrlStatus(`Reading file: ${file.name}`);
+        const text = await file.text();
+        loadDataFromText(text, `File JSON (${file.name})`);
+      } catch (error) {
+        console.error(error);
+        showError(`JSON file load failed: ${error.message}`);
+        setJsonUrlStatus(`Load failed: ${error.message}`, 'error');
+      }
+    }
+
+    function runSanityChecks() {
+      console.assert(Array.isArray(rawData.gameHistory), 'gameHistory should be an array');
+      console.assert(rawData.gameHistory.length === 5, 'Expected 5 completed games in history');
+      console.assert(rawData.player1?.bounties?.length === 5, 'Expected 5 current bounties for player 1');
+      console.assert(rawData.player2?.bounties?.length === 5, 'Expected 5 current bounties for player 2');
+
+      const paddedCurrent = normalizeToSixBounties(rawData.player1.bounties);
+      console.assert(paddedCurrent.length === 6, 'Expected current pools to render as 6 fixed slots');
+      console.assert(getComputedStyle(document.querySelector('.bounty-list')).gridTemplateColumns.split(' ').length === 3, 'Expected bounty list to use 3 columns');
+      console.assert(getComputedStyle(document.querySelector('.bounty-list')).gridTemplateRows.split(' ').length === 2, 'Expected bounty list to use 2 rows');
+      console.assert(paddedCurrent[5].placeholder === true, 'Expected missing sixth live slot to be a placeholder');
+
+      const game5 = rawData.gameHistory[4];
+      console.assert(game5?.player1?.title === 'A Barrel of Scorpions 2', 'Game 5 player 1 pick mismatch');
+      console.assert(game5?.player2?.title === 'Build It Nice Build It Twice', 'Game 5 player 2 pick mismatch');
+
+      const p2Game5Pool = bestPoolFromDetail(game5.player2Detail, game5.player2.id);
+      console.assert(p2Game5Pool.length === 6, 'Expected 6 bounties in Game 5 player 2 locked pool');
+      console.assert(p2Game5Pool.some((x) => x.id === 18), 'Expected selected Game 5 player 2 bounty in pool');
+
+      const longCard = makeBountyCard({
+        id: 999,
+        title: 'Very Long Bounty Title Example',
+        description: 'This is an intentionally long description used to verify the overlay keeps the full bounty text visible and scales it to fit the fixed card height without truncation.'
+      }, false);
+      console.assert(longCard.querySelector('.bounty-desc').textContent.includes('full bounty text visible'), 'Expected full description text to remain present');
+      console.assert(typeof fitBountyCard === 'function', 'Expected fitBountyCard function to exist');
+      console.assert(getComputedStyle(longCard.querySelector('.bounty-title')).fontFamily.includes('WildBreathZelda'), 'Expected custom font on bounty title');
+      console.assert(getComputedStyle(longCard.querySelector('.bounty-desc')).fontFamily.includes('WildBreathZelda'), 'Expected custom font on bounty description');
+      fitBountyCard(longCard);
+      console.assert(parseFloat(longCard.querySelector('.bounty-title').style.fontSize) > 0, 'Expected title font size to be set by fitBountyCard');
+      console.assert(parseFloat(longCard.querySelector('.bounty-desc').style.fontSize) > 0, 'Expected description font size to be set by fitBountyCard');
+      console.assert(parseFloat(longCard.querySelector('.bounty-desc').style.lineHeight) > 1, 'Expected description line height to be set by fitBountyCard');
+      console.assert(getComputedStyle(longCard.querySelector('.bounty-inner')).overflow === 'hidden', 'Expected bounty inner wrapper to constrain text fitting area');
+      console.assert(getComputedStyle(document.querySelector('.panel')).gridTemplateRows.includes('64px'), 'Expected fixed panel header row height');
+      console.assert(longCard.classList.contains('bounty-card'), 'Expected bounty card to render');
+
+      const chosenCard = makeBountyCard({ id: 1, title: 'Chosen Bounty', description: 'Chosen description' }, { isSelected: true, isCrossed: false });
+      console.assert(chosenCard.classList.contains('selected'), 'Expected chosen bounty to be highlighted');
+      console.assert(!chosenCard.textContent.includes('#1'), 'Expected bounty number text to be removed from card');
+      console.assert(!chosenCard.classList.contains('crossed'), 'Expected current chosen bounty not to be crossed out');
+
+      const leveledCard = makeBountyCard({ id: 69, title: 'Trappers', description: 'Wall at least 3 wolf type animals in, you must not kill them + win', level: 1 });
+      console.assert(leveledCard.querySelector('.bounty-level')?.textContent.trim() === 'I', 'Expected level badge to render Roman numeral when level exists');
+
+      const weanGame1 = historyDisplayPools.player1[0];
+      const weanGame2 = historyDisplayPools.player1[1];
+      const shixoGame1 = historyDisplayPools.player2[0];
+      const shixoGame2 = historyDisplayPools.player2[1];
+      console.assert(!weanGame1.some((b) => b?.crossed), 'Expected no crossed bounties for player 1 in Game 1');
+      console.assert(weanGame2.some((b) => b?.id === 10 && b?.crossed), 'Expected player 1 Game 1 used bounty to remain visible and crossed in Game 2 when no refresh happened');
+      console.assert(!shixoGame2.some((b) => b?.id === 24), 'Expected refreshed-out unpicked bounties to be removed from later round display');
+      console.assert(!shixoGame2.some((b) => b?.id === 38), 'Expected previously used picked bounty to disappear after refresh');
+      validateOverlayDataShape(rawData);
+      console.assert(typeof loadDataFromUrl === 'function', 'Expected URL JSON loader to exist');
+      console.assert(typeof loadDataFromText === 'function', 'Expected pasted JSON loader to exist');
+      console.assert(typeof loadDataFromFile === 'function', 'Expected file JSON loader to exist');
+      console.assert(document.querySelectorAll('.history-card').length === 0, 'Expected center summary/history cards to be removed');
+      const oldIndex = currentIndex;
+      currentIndex = Math.max(0, rawData.gameHistory.length - 1);
+      currentIndex = Math.min(rawData.gameHistory.length, currentIndex + 1);
+      console.assert(currentIndex === rawData.gameHistory.length, 'Expected navigation math to reach live view');
+      currentIndex = Math.max(-1, 0 - 1);
+      console.assert(currentIndex === -1, 'Expected navigation math to reach Game 0 pre-pick view');
+      currentIndex = oldIndex;
+      console.assert(shixoGame1.some((b) => b?.id === 24), 'Expected original Game 1 bounty to appear before refresh');
+      const gameZeroP1 = getInitialPoolFromHistoryGame(rawData.gameHistory[0], 'player1');
+      const gameZeroP2 = getInitialPoolFromHistoryGame(rawData.gameHistory[0], 'player2');
+      console.assert(gameZeroP1.some((b) => b?.id === 10), 'Expected Game 0 player 1 initial pool to contain first-game options');
+      console.assert(gameZeroP2.some((b) => b?.id === 24), 'Expected Game 0 player 2 initial pool to contain first-game options');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'loadJsonButton') {
+        loadDataFromUrl(el('jsonUrlInput')?.value || '');
+      } else if (e.target && e.target.id === 'loadPastedJsonButton') {
+        loadDataFromText(el('jsonPasteInput')?.value || '', 'Pasted JSON');
+      } else if (e.target && e.target.id === 'clearPastedJsonButton') {
+        const textarea = el('jsonPasteInput');
+        if (textarea) textarea.value = '';
+        setJsonUrlStatus('Paste box cleared.');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        currentIndex = Math.max(-1, currentIndex - 1);
+        render();
+      } else if (e.key === 'ArrowRight') {
+        currentIndex = Math.min(rawData.gameHistory.length, currentIndex + 1);
+        render();
+      } else if (e.key === '0') {
+        currentIndex = rawData.gameHistory.length;
+        render();
+      } else if (e.key.toLowerCase() === 'h') {
+        currentIndex = historyMode ? rawData.gameHistory.length : Math.max(-1, rawData.gameHistory.length - 1);
+        render();
+      } else if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'jsonUrlInput') {
+        loadDataFromUrl(el('jsonUrlInput')?.value || '');
+      }
+    });
+
+    document.addEventListener('change', (e) => {
+      if (e.target && e.target.id === 'jsonFileInput') {
+        loadDataFromFile(e.target.files?.[0]);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(() => fitAllBountyCards());
+    });
+
+(async () => {
+  try {
+    await loadCustomFont();
+
+    runSanityChecks();
+    rebuildDerivedState();
+    render();
+
+    const savedUrl = (() => {
+      try {
+        return localStorage.getItem('aoe2_overlay_json_url') || '';
+      } catch (storageError) {
+        return '';
+      }
+    })();
+
+    if (savedUrl) {
+      const input = el('jsonUrlInput');
+      if (input) input.value = savedUrl;
+      setJsonUrlStatus('Saved JSON URL ready to load.');
+    }
+  } catch (error) {
+    console.error(error);
+    showError(`Overlay failed to render: ${error.message}`);
+  }
+})();
+  </script>
+</body>
+</html>
