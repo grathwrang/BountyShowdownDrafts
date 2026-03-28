@@ -406,6 +406,12 @@
         parsedScore = parseSetScore(extractCellValue(cells[idx]));
         if (parsedScore) break;
       }
+      if (!parsedScore) {
+        for (const cell of cells) {
+          parsedScore = parseSetScore(extractCellValue(cell));
+          if (parsedScore) break;
+        }
+      }
       if (!parsedScore) return { p1Points: 0, p2Points: 0 };
 
       if (winner && normalizeName(winner) === normalizeName(player1)) {
@@ -487,10 +493,19 @@
 
     function mapTable(table) {
       const headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
+      const normalizedHeaders = headers.map(normalizeHeader);
       const player1Idx = findColumnIndex(headers, CONFIG.columns.player1);
       const player2Idx = findColumnIndex(headers, CONFIG.columns.player2);
       const winnerIdx = findColumnIndex(headers, CONFIG.columns.winner);
-      const scoreIndexes = findColumnIndexes(headers, CONFIG.columns.score);
+      const scoreIndexes = [
+        ...new Set([
+          ...findColumnIndexes(headers, CONFIG.columns.score),
+          ...normalizedHeaders
+            .map((h, idx) => ({ h, idx }))
+            .filter(item => item.h.includes('score'))
+            .map(item => item.idx)
+        ])
+      ];
       const highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
       const profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
 
