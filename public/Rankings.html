@@ -331,6 +331,8 @@
 
       .player-name {
         font-size: 20px;
+        white-space: normal;
+        overflow-wrap: anywhere;
       }
 
       .cell {
@@ -347,6 +349,10 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--dust);
+      }
+
+      .row.top4 .cell::before {
+        color: rgba(76, 45, 23, 0.75);
       }
 
       .cell.points {
@@ -379,6 +385,19 @@
         gap: 6px;
         padding: 10px 14px 14px;
         font-size: 11px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .row {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "rank"
+          "player"
+          "points"
+          "record"
+          "bounty"
+          "elo";
       }
     }
   </style>
