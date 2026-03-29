@@ -249,6 +249,138 @@
       body { padding: 10px; }
       .overlay { width: 100%; }
     }
+
+    @media (max-width: 768px) {
+      html, body {
+        height: auto;
+        min-height: 100%;
+        overflow: auto;
+      }
+
+      body {
+        display: block;
+        padding: 8px;
+      }
+
+      .overlay {
+        width: 100%;
+        border-radius: 14px;
+      }
+
+      .overlay::before,
+      .overlay::after {
+        left: 8px;
+        right: 8px;
+      }
+
+      .header {
+        padding: 14px 14px 12px;
+      }
+
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+      }
+
+      .title {
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .subtitle {
+        font-size: 12px;
+      }
+
+      .table-head {
+        display: none;
+      }
+
+      .rows {
+        max-height: none;
+        padding: 8px 0 10px;
+      }
+
+      .row {
+        margin: 0 8px;
+        padding: 10px 12px;
+        gap: 6px 10px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "rank rank"
+          "player player"
+          "points record"
+          "bounty elo";
+      }
+
+      .rank {
+        grid-area: rank;
+        font-size: 18px;
+      }
+
+      .rank-prefix {
+        font-size: 14px;
+      }
+
+      .rank-value {
+        min-width: 30px;
+      }
+
+      .player {
+        grid-area: player;
+      }
+
+      .player-name {
+        font-size: 20px;
+      }
+
+      .cell {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        font-size: 18px;
+      }
+
+      .cell::before {
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dust);
+      }
+
+      .cell.points {
+        grid-area: points;
+        font-size: 24px;
+      }
+      .cell.points::before { content: "Points"; }
+
+      .cell.record {
+        grid-area: record;
+        font-size: 16px;
+      }
+      .cell.record::before { content: "Overall W/L"; }
+
+      .cell.bounty-total {
+        grid-area: bounty;
+        font-size: 17px;
+      }
+      .cell.bounty-total::before { content: "Bounties"; }
+
+      .cell:not(.points):not(.record):not(.bounty-total) {
+        grid-area: elo;
+        font-size: 17px;
+      }
+      .cell:not(.points):not(.record):not(.bounty-total)::before { content: "Elo High"; }
+
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 10px 14px 14px;
+        font-size: 11px;
+      }
+    }
   </style>
 </head>
 <body>
