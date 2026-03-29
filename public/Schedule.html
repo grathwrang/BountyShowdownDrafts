@@ -238,6 +238,138 @@
       body { padding: 10px; }
       .overlay { width: 100%; }
     }
+
+    @media (max-width: 640px) {
+      html, body {
+        height: auto;
+        min-height: 100%;
+        overflow: auto;
+      }
+
+      body {
+        display: block;
+        padding: 8px;
+      }
+
+      .overlay {
+        width: 100%;
+        border-radius: 14px;
+      }
+
+      .overlay::before,
+      .overlay::after {
+        left: 8px;
+        right: 8px;
+      }
+
+      .header {
+        padding: 14px 14px 12px;
+      }
+
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+      }
+
+      .title {
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .subtitle {
+        margin-top: 4px;
+        font-size: 12px;
+      }
+
+      .table-head {
+        display: none;
+      }
+
+      .rows-wrap {
+        max-height: none;
+      }
+
+      .rows {
+        padding: 8px 0 10px;
+      }
+
+      .row {
+        margin: 0 8px;
+        padding: 10px 12px;
+        gap: 6px 10px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "date time"
+          "p1 p1"
+          "p2 p2";
+      }
+
+      .date-cell {
+        grid-area: date;
+      }
+
+      .date-main {
+        font-size: 18px;
+      }
+
+      .date-sub {
+        font-size: 10px;
+      }
+
+      .time-chip {
+        grid-area: time;
+        justify-self: end;
+        font-size: 22px;
+      }
+
+      .duelist {
+        font-size: 20px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .duelist:nth-of-type(3) {
+        grid-area: p1;
+      }
+
+      .duelist:nth-of-type(4) {
+        grid-area: p2;
+      }
+
+      .duelist:nth-of-type(4)::before {
+        content: "vs";
+        display: inline-block;
+        margin-right: 8px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--dust);
+        vertical-align: middle;
+      }
+
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 10px 14px 14px;
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .row {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "date"
+          "time"
+          "p1"
+          "p2";
+      }
+
+      .time-chip {
+        justify-self: start;
+      }
+    }
   </style>
 </head>
 <body>
