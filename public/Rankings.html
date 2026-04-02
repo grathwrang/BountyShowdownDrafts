@@ -818,7 +818,7 @@
           : `<span class="player-name" title="${tooltipAttr}">${playerName}</span>`;
 
         return `
-          <div class="row ${i < 4 ? 'top4' : ''} ${i === 0 ? 'first-place' : ''}">
+          <div class="row ${i < 8 ? 'top4' : ''} ${i === 0 ? 'first-place' : ''}">
             <div class="rank"><span class="rank-prefix">#</span><span class="rank-value">${item.rank}</span></div>
             <div class="player">${playerMarkup}</div>
             <div class="cell points">${escapeHtml(item.points)}</div>
