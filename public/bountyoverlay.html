@@ -1675,25 +1675,22 @@ el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshes
     });
 
 
-  // External navigation API for Streamer.bot Deck buttons
-  window.bountyNav = function(cmd) {
+  // External navigation API — listens for obs-browser custom events from Streamer.bot
+  window.addEventListener('bounty-nav', function(e) {
+    const cmd = e?.detail?.cmd;
     if (cmd === 'next') {
       currentIndex = Math.min(rawData.gameHistory.length, currentIndex + 1);
-      render();
     } else if (cmd === 'prev') {
       currentIndex = Math.max(-1, currentIndex - 1);
-      render();
     } else if (cmd === 'live') {
       currentIndex = rawData.gameHistory.length;
-      render();
     } else if (cmd === 'history') {
       currentIndex = Math.max(-1, rawData.gameHistory.length - 1);
-      render();
     } else if (cmd === 'zero') {
       currentIndex = -1;
-      render();
     }
-  };
+    render();
+  });
 
   function swapPlayersForLeftRight(data, leftRole) {
     if (leftRole === 'player1') return data;
