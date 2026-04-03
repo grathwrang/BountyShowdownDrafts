@@ -1676,6 +1676,10 @@ el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshes
 
 
   // External navigation API — listens for obs-browser custom events from Streamer.bot
+  function persistGameIndex() {
+    try { localStorage.setItem('bounty_game_index', String(currentIndex)); } catch(e) {}
+  }
+
   window.addEventListener('bounty-nav', function(e) {
     const cmd = e?.detail?.cmd;
     if (cmd === 'next') {
@@ -1689,6 +1693,7 @@ el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshes
     } else if (cmd === 'zero') {
       currentIndex = -1;
     }
+    persistGameIndex();
     render();
   });
 
@@ -1733,6 +1738,19 @@ el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshes
 
       const oriented = swapPlayersForLeftRight(data, leftRole);
       applyOverlayData(oriented, 'Auto (session ' + sessionId + ')');
+
+      // Restore last game index from localStorage
+      try {
+        const saved = localStorage.getItem('bounty_game_index');
+        if (saved !== null) {
+          const idx = parseInt(saved, 10);
+          if (!isNaN(idx)) {
+            currentIndex = Math.max(-1, Math.min(oriented.gameHistory.length, idx));
+            render();
+          }
+        }
+      } catch(e) {}
+
       return true;
     } catch (err) {
       console.error('Auto-load failed:', err);
