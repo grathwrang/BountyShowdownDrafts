@@ -1674,6 +1674,27 @@ el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshes
       requestAnimationFrame(() => fitAllBountyCards());
     });
 
+
+  // External navigation API for Streamer.bot Deck buttons
+  window.bountyNav = function(cmd) {
+    if (cmd === 'next') {
+      currentIndex = Math.min(rawData.gameHistory.length, currentIndex + 1);
+      render();
+    } else if (cmd === 'prev') {
+      currentIndex = Math.max(-1, currentIndex - 1);
+      render();
+    } else if (cmd === 'live') {
+      currentIndex = rawData.gameHistory.length;
+      render();
+    } else if (cmd === 'history') {
+      currentIndex = Math.max(-1, rawData.gameHistory.length - 1);
+      render();
+    } else if (cmd === 'zero') {
+      currentIndex = -1;
+      render();
+    }
+  };
+
   function swapPlayersForLeftRight(data, leftRole) {
     if (leftRole === 'player1') return data;
     // leftRole is player2 — swap so left panel always = CA left side player
