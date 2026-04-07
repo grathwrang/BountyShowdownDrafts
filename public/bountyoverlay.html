@@ -585,6 +585,37 @@
 }
 
     .controls { color: var(--muted); font-size: 18px; }
+
+    .game-nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .game-nav-btn {
+      background: rgba(111, 178, 255, 0.12);
+      border: 1px solid rgba(111, 178, 255, 0.28);
+      color: var(--accent);
+      border-radius: 8px;
+      width: 34px;
+      height: 28px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s;
+      padding: 0;
+    }
+
+    .game-nav-btn:hover {
+      background: rgba(111, 178, 255, 0.26);
+    }
+
+    .game-nav-btn:active {
+      background: rgba(111, 178, 255, 0.38);
+    }
     .phase-bounty { color: var(--accent2); }
     .phase-history { color: var(--good); }
 
@@ -619,6 +650,10 @@
       <div class="center-status">
         <div class="status-pill" id="statusPill">BOUNTY PHASE</div>
         <div class="game-count" id="gameCount">Game 1</div>
+        <div class="game-nav-buttons">
+          <button class="game-nav-btn" id="prevGameBtn" title="Previous game">&#9664;</button>
+          <button class="game-nav-btn" id="nextGameBtn" title="Next game">&#9654;</button>
+        </div>
       </div>
       <div class="name right" id="player2Name">Player 2</div>
     </div>
@@ -685,7 +720,7 @@
 
     <div class="footer">
       <div id="modeLabel">Viewing: Current Bounty Phase</div>
-      <div class="controls">Keys: ← / → game • 0 = live/current • H = history mode</div>
+      <div class="controls">Keys: 0 = live/current • H = history mode</div>
     </div>
   </div>
 
@@ -1865,24 +1900,24 @@ el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshes
         const textarea = el('jsonPasteInput');
         if (textarea) textarea.value = '';
         setJsonUrlStatus('Paste box cleared.');
+      } else if (e.target && e.target.id === 'prevGameBtn') {
+        currentIndex = Math.max(-1, currentIndex - 1);
+        render();
+      } else if (e.target && e.target.id === 'nextGameBtn') {
+        currentIndex = Math.min(rawData.gameHistory.length, currentIndex + 1);
+        render();
       }
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') {
-        currentIndex = Math.max(-1, currentIndex - 1);
-        render();
-      } else if (e.key === 'ArrowRight') {
-        currentIndex = Math.min(rawData.gameHistory.length, currentIndex + 1);
-        render();
-      } else if (e.key === '0') {
+      const inInput = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+      if (inInput) return;
+      if (e.key === '0') {
         currentIndex = rawData.gameHistory.length;
         render();
       } else if (e.key.toLowerCase() === 'h') {
         currentIndex = historyMode ? rawData.gameHistory.length : Math.max(-1, rawData.gameHistory.length - 1);
         render();
-      } else if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'jsonUrlInput') {
-        loadDataFromUrl(el('jsonUrlInput')?.value || '');
       }
     });
 
