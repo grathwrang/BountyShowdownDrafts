@@ -481,15 +481,17 @@ app.get('/api/admin/sessions', requireAdmin, (req, res) => {
 });
 
 // Public session list — used by the overlay session picker.
-// Only exposes sessions that are on game 3+ AND at least 60 minutes old,
-// so spoiler-sensitive early-game data is never visible to the public.
+// Only exposes sessions that are on game 3+, at least 90 minutes old,
+// AND were created today — so stale sessions from previous days don't clutter the picker.
 const PUBLIC_MIN_GAME = 3;
 const PUBLIC_MIN_AGE_MS = 90 * 60 * 1000; // 90 minutes
 app.get('/api/sessions', (req, res) => {
   const now = Date.now();
+  const startOfToday = new Date('2025-04-07T00:00:00').getTime(); // April 7th only
   const visible = Object.values(sessions).filter(s =>
     s.gameNumber >= PUBLIC_MIN_GAME &&
-    (now - (s.createdAt || 0)) >= PUBLIC_MIN_AGE_MS
+    (now - (s.createdAt || 0)) >= PUBLIC_MIN_AGE_MS &&
+    (s.createdAt || 0) >= startOfToday
   );
   res.json(visible.map(s => ({ id: s.id, playerNames: s.playerNames, status: s.status, gameNumber: s.gameNumber, createdAt: s.createdAt })));
 });
