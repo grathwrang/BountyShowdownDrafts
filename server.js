@@ -480,9 +480,18 @@ app.get('/api/admin/sessions', requireAdmin, (req, res) => {
   res.json(Object.values(sessions).map(s => ({ id: s.id, playerNames: s.playerNames, status: s.status, gameNumber: s.gameNumber, createdAt: s.createdAt })));
 });
 
-// Public session list — used by the overlay session picker
+// Public session list — used by the overlay session picker.
+// Only exposes sessions that are on game 3+ AND at least 60 minutes old,
+// so spoiler-sensitive early-game data is never visible to the public.
+const PUBLIC_MIN_GAME = 3;
+const PUBLIC_MIN_AGE_MS = 90 * 60 * 1000; // 90 minutes
 app.get('/api/sessions', (req, res) => {
-  res.json(Object.values(sessions).map(s => ({ id: s.id, playerNames: s.playerNames, status: s.status, gameNumber: s.gameNumber, createdAt: s.createdAt })));
+  const now = Date.now();
+  const visible = Object.values(sessions).filter(s =>
+    s.gameNumber >= PUBLIC_MIN_GAME &&
+    (now - (s.createdAt || 0)) >= PUBLIC_MIN_AGE_MS
+  );
+  res.json(visible.map(s => ({ id: s.id, playerNames: s.playerNames, status: s.status, gameNumber: s.gameNumber, createdAt: s.createdAt })));
 });
 
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
