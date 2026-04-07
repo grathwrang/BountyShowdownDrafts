@@ -1312,7 +1312,7 @@ function setPickBox(side, playerName, pick) {
       el('leftRefreshInline').textContent = `Refreshes used: ${rawData.player1.refreshesUsed ?? 0}`;
       el('rightRefreshInline').textContent = `Refreshes used: ${rawData.player2.refreshesUsed ?? 0}`;
       el('statusPill').textContent = phaseLabel(rawData.status);
-      el('gameCount').textContent = `Game ${rawData.gameNumber}`;
+      el('gameCount').textContent = `Game ${rawData.gameNumber} of 3`;
       el('modeLabel').innerHTML = 'Viewing: <span class="phase-bounty">Current Bounty Phase</span>';
       el('leftPoolLabel').textContent = 'Current options';
       el('rightPoolLabel').textContent = 'Current options';
@@ -1351,7 +1351,7 @@ function setPickBox(side, playerName, pick) {
       el('leftRefreshInline').textContent = 'Refreshes used: 0';
       el('rightRefreshInline').textContent = 'Refreshes used: 0';
       el('statusPill').textContent = 'PRE-PICK VIEW';
-      el('gameCount').textContent = 'Game 0';
+      el('gameCount').textContent = 'Game 0 of 3';
       el('modeLabel').innerHTML = 'Viewing: <span class="phase-history">Pre-pick pools</span>';
       el('leftPoolLabel').textContent = 'Initial pool before Game 1';
       el('rightPoolLabel').textContent = 'Initial pool before Game 1';
@@ -1499,7 +1499,7 @@ function getCumulativeRefreshesThroughGame(index, playerKey) {
      el('leftRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshesThroughGame(index, 'player1')}`;
 el('rightRefreshInline').textContent = `Refreshes used: ${getCumulativeRefreshesThroughGame(index, 'player2')}`;
       el('statusPill').textContent = 'GAME REVIEW';
-      el('gameCount').textContent = `Game ${game.game} of ${rawData.gameHistory.length}`;
+      el('gameCount').textContent = `Game ${game.game} of 3`;
       el('modeLabel').innerHTML = 'Viewing: <span class="phase-history">Completed Game</span>';
       el('leftPoolLabel').textContent = 'Locked pool that round';
       el('rightPoolLabel').textContent = 'Locked pool that round';
