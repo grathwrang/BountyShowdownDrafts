@@ -480,6 +480,11 @@ app.get('/api/admin/sessions', requireAdmin, (req, res) => {
   res.json(Object.values(sessions).map(s => ({ id: s.id, playerNames: s.playerNames, status: s.status, gameNumber: s.gameNumber, createdAt: s.createdAt })));
 });
 
+// Public session list — used by the overlay session picker
+app.get('/api/sessions', (req, res) => {
+  res.json(Object.values(sessions).map(s => ({ id: s.id, playerNames: s.playerNames, status: s.status, gameNumber: s.gameNumber, createdAt: s.createdAt })));
+});
+
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
   res.json({ globalDefaultRefreshLimit });
 });
