@@ -1312,7 +1312,7 @@ function setPickBox(side, playerName, pick) {
       el('leftRefreshInline').textContent = `Refreshes used: ${rawData.player1.refreshesUsed ?? 0}`;
       el('rightRefreshInline').textContent = `Refreshes used: ${rawData.player2.refreshesUsed ?? 0}`;
       el('statusPill').textContent = phaseLabel(rawData.status);
-      el('gameCount').textContent = `Game ${rawData.gameNumber} • Live Phase`;
+      el('gameCount').textContent = `Game ${rawData.gameNumber}`;
       el('modeLabel').innerHTML = 'Viewing: <span class="phase-bounty">Current Bounty Phase</span>';
       el('leftPoolLabel').textContent = 'Current options';
       el('rightPoolLabel').textContent = 'Current options';
@@ -1351,7 +1351,7 @@ function setPickBox(side, playerName, pick) {
       el('leftRefreshInline').textContent = 'Refreshes used: 0';
       el('rightRefreshInline').textContent = 'Refreshes used: 0';
       el('statusPill').textContent = 'PRE-PICK VIEW';
-      el('gameCount').textContent = 'Game 0 • Before Game 1 Picks';
+      el('gameCount').textContent = 'Game 0';
       el('modeLabel').innerHTML = 'Viewing: <span class="phase-history">Pre-pick pools</span>';
       el('leftPoolLabel').textContent = 'Initial pool before Game 1';
       el('rightPoolLabel').textContent = 'Initial pool before Game 1';
