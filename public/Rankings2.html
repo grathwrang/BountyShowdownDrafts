@@ -140,19 +140,19 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
     }
 
-    .row.top4 {
+    .row.top2 {
       background: linear-gradient(180deg, rgba(247, 227, 187, 0.96), rgba(225, 192, 130, 0.92));
       border-color: rgba(255, 234, 191, 0.95);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 1px rgba(80, 42, 18, 0.12);
     }
 
-    .row.top4 .rank,
-    .row.top4 .cell,
-    .row.top4 .player-name { color: #4c2d17; text-shadow: none; }
+    .row.top2 .rank,
+    .row.top2 .cell,
+    .row.top2 .player-name { color: #4c2d17; text-shadow: none; }
 
-    .row.top4 .cell.points,
-    .row.top4 .player-name:hover,
-    .row.top4 .player-name:focus-visible { color: #7a4318; }
+    .row.top2 .cell.points,
+    .row.top2 .player-name:hover,
+    .row.top2 .player-name:focus-visible { color: #7a4318; }
 
     .row.first-place {
       border-color: rgba(255, 232, 176, 0.98);
@@ -161,6 +161,20 @@
         0 0 0 2px rgba(255, 218, 120, 0.5),
         0 0 28px rgba(240, 200, 122, 0.18);
     }
+
+    .row.bronze {
+      background: linear-gradient(180deg, rgba(180, 120, 70, 0.72), rgba(120, 72, 32, 0.78));
+      border-color: rgba(190, 130, 75, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(60, 30, 10, 0.18);
+    }
+
+    .row.bronze .rank,
+    .row.bronze .cell,
+    .row.bronze .player-name { color: #f0dfc0; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+
+    .row.bronze .cell.points,
+    .row.bronze .player-name:hover,
+    .row.bronze .player-name:focus-visible { color: #ffeac8; }
 
     .rank {
       display: flex;
@@ -351,7 +365,7 @@
         color: var(--dust);
       }
 
-      .row.top4 .cell::before {
+      .row.top2 .cell::before {
         color: rgba(76, 45, 23, 0.75);
       }
 
@@ -827,7 +841,7 @@
           : `<span class="player-name" title="${tooltipAttr}">${playerName}</span>`;
 
         return `
-          <div class="row ${i < 8 ? 'top4' : ''} ${i === 0 ? 'first-place' : ''}">
+          <div class="row ${i < 2 ? 'top2' : i < 4 ? 'bronze' : ''} ${i === 0 ? 'first-place' : ''}">
             <div class="rank"><span class="rank-prefix">#</span><span class="rank-value">${item.rank}</span></div>
             <div class="player">${playerMarkup}</div>
             <div class="cell points">${escapeHtml(item.points)}</div>
