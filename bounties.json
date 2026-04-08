@@ -50,14 +50,14 @@
   {
     "id": 9,
     "title": "An Explosive Victory",
-    "description": "Win producing only villagers and 2 or more petards and/or 2 or more flaming camels",
+    "description": "Produce only villagers and 2 or more petards and/or 2 or more flaming camels and win",
     "level": 2
   },
   {
     "id": 10,
     "title": "And My Axe",
     "description": "Make only Throwing Axemen/Elite Throwing Axemen (must make at least 2) and villagers + win",
-    "level": 1
+    "level": 2
   },
   {
     "id": 11,
@@ -80,7 +80,7 @@
   {
     "id": 14,
     "title": "Basically the Huns",
-    "description": "You must not reach Feudal Age until you reach 200 pop in housing and win (no Huns)",
+    "description": "You must not reach Feudal Age until you reach 200 pop in housing and win (no Huns or Incas)",
     "level": 3
   },
   {
@@ -98,7 +98,7 @@
   {
     "id": 17,
     "title": "The Dumbest Wall",
-    "description": "Build a wall (any impassable construction) that touches both starting TCs and win",
+    "description": "Build a wall (any impassable construction including foundations) that touches both starting TCs and win",
     "level": 3
   },
   {
@@ -139,7 +139,7 @@
   },
   {
     "id": 24,
-    "title": "F It, Make War Elephants",
+    "title": "F--- It, Make War Elephants",
     "description": "Produce only war elephants (must make at least 2) and villagers and win",
     "level": 2
   },
@@ -170,7 +170,7 @@
   {
     "id": 29,
     "title": "Ghost Town",
-    "description": "Delete your starting TC and rebuild it on a neutral gold/stone before Feudal and win",
+    "description": "Delete your starting TC and rebuild it on a neutral gold/stone before reaching Feudal age and win",
     "level": 1
   },
   {
@@ -188,25 +188,19 @@
   {
     "id": 32,
     "title": "His Name's Greg",
-    "description": "Entirely construct at least 1 castle with 1 villager named Greg (who survives) within line of sight of the opponent and win",
+    "description": "Entirely construct at least 1 castle with 1 villager named Greg (who survives) within line of sight of an opponent's building or trapped unit and win",
     "level": 2
-  },
-  {
-    "id": 33,
-    "title": "Housing Crisis",
-    "description": "Produce no more than 15 villagers and win",
-    "level": 3
   },
   {
     "id": 34,
     "title": "I Draw The Line",
-    "description": "Win with a completed wall (walls and gates only) that touches parallel outsides of the map",
+    "description": "Win with a completed stone wall (walls and gates only) that touches parallel outsides of the map",
     "level": 3
   },
   {
     "id": 35,
     "title": "Inclined To Build",
-    "description": "Houses may only be placed on hills or elevations and win (no Huns)",
+    "description": "Houses may only be placed on hills or elevations and win (no Huns or Incas)",
     "level": 2
   },
   {
@@ -282,12 +276,6 @@
     "level": 2
   },
   {
-    "id": 48,
-    "title": "OK Boomer",
-    "description": "No clicking up to castle age until 100 villagers are alive and win",
-    "level": 3
-  },
-  {
     "id": 49,
     "title": "Only Rams",
     "description": "Produce only rams and villagers and win",
@@ -296,7 +284,7 @@
   {
     "id": 50,
     "title": "Poor City Planning",
-    "description": "All buildings must connect to your starting Town Center, directly or through other completed connected buildings, and win",
+    "description": "Win with all buildings connecting to your starting Town Center, directly or through other completed connected buildings",
     "level": 3
   },
   {
@@ -374,7 +362,7 @@
   {
     "id": 63,
     "title": "The Friendly Stranger",
-    "description": "Build a farm in visual range of the opponent, fully farm the farm and win",
+    "description": "Build a farm in visual range of an opponent's building, fully farm the farm and win",
     "level": 2
   },
   {
@@ -428,7 +416,7 @@
   {
     "id": 72,
     "title": "We Have Huns at Home",
-    "description": "Do not produce any military until reaching 200 pop space and win (no huns)",
+    "description": "Do not produce any military until reaching 200 pop space and win (no Huns or Incas)",
     "level": 2
   },
   {
@@ -442,12 +430,6 @@
     "title": "Wonderwall",
     "description": "Win with a completed wall around your starting TC that includes a wonder",
     "level": 2
-  },
-  {
-    "id": 75,
-    "title": "Wooden Allergy",
-    "description": "Win without gathering wood",
-    "level": 3
   },
   {
     "id": 76,
@@ -530,7 +512,7 @@
   {
     "id": 89,
     "title": "His Name's Greg 2",
-    "description": "Entirely construct at least 2 castles with 1 villager named Greg (who survives) within line of sight of the opponent and win",
+    "description": "Entirely construct at least 2 castles with 1 villager named Greg (who survives) within line of sight of an opponent's building or trapped unit and win",
     "level": 3
   },
   {
@@ -602,13 +584,13 @@
   {
     "id": 101,
     "title": "A Barrel of Scorpions 2",
-    "description": "Win with 40+ Scorpions/Heavy Scorpions alive at time of victory",
+    "description": "Win with 50+ Scorpions/Heavy Scorpions alive at time of victory",
     "level": 2
   },
   {
     "id": 102,
     "title": "A Barrel of Scorpions 3",
-    "description": "Win with 60+ Scorpions/Heavy Scorpions alive at time of victory",
+    "description": "Win with 80+ Scorpions/Heavy Scorpions alive at time of victory",
     "level": 3
   }
 ]
