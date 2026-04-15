@@ -448,7 +448,9 @@
         player2Record: ['player 2 record', 'player2 record', 'p2 record'],
         highElo: ['all time high elo', 'high elo', 'elo high', 'elo'],
         profile: ['profile', 'link', 'url'],
-        completed: ['completed', 'done', 'finished', 'played']
+        completed: ['completed', 'done', 'finished', 'played'],
+        // Rows flagged "yes" here belong to Group Stage 2 and must be excluded
+        groupStage2: ['group stage 2', 'gs2', 'stage 2', 'group 2']
       },
       staticHighElos: {
         'chpstkx': '1,349',
@@ -665,6 +667,9 @@
       if (!entry.highElo && elo) entry.highElo = elo;
     }
 
+    // Values treated as "yes" for the Group Stage 2 exclusion flag
+    const GS2_YES_VALUES = new Set(['yes', 'true', 'done', 'finished', 'played', '1', 'y']);
+
     function mapTable(table) {
       let headers = table.cols.map(col => col && col.label ? String(col.label).trim() : '');
       let player1Idx = findColumnIndex(headers, CONFIG.columns.player1);
@@ -678,6 +683,7 @@
       let highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
       let profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
       let completedIdx = findColumnIndex(headers, CONFIG.columns.completed);
+      let groupStage2Idx = findColumnIndex(headers, CONFIG.columns.groupStage2);
 
       if ((player1Idx === -1 || player2Idx === -1) && table.rows && table.rows.length) {
         const fallbackHeaders = (table.rows[0].c || []).map(extractCellValue);
@@ -696,6 +702,7 @@
           highEloIdx = findColumnIndex(headers, CONFIG.columns.highElo);
           profileIdx = findColumnIndex(headers, CONFIG.columns.profile);
           completedIdx = findColumnIndex(headers, CONFIG.columns.completed);
+          groupStage2Idx = findColumnIndex(headers, CONFIG.columns.groupStage2);
           table = { ...table, rows: table.rows.slice(1) };
         }
       }
@@ -712,6 +719,13 @@
 
       for (const row of table.rows) {
         const cells = row.c || [];
+
+        // Skip rows that belong to Group Stage 2
+        if (groupStage2Idx !== -1) {
+          const gs2Value = extractCellValue(cells[groupStage2Idx]).trim().toLowerCase();
+          if (GS2_YES_VALUES.has(gs2Value)) continue;
+        }
+
         const completedValue = completedIdx !== -1 ? extractCellValue(cells[completedIdx]).trim().toLowerCase() : '';
 
         if (completedIdx !== -1 && !['yes', 'true', 'done', 'finished', 'played', '1', 'y'].includes(completedValue)) continue;
