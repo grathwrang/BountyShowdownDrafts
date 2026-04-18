@@ -222,11 +222,17 @@ async function loadFromRedis() {
 
 // ── HELPERS ────────────────────────────────────────────────────────
 function drawBounties(usedIds, count = 6, excludeIds = [], options = {}) {
-  const { level3Only = false } = options;
+  const { level3Only = false, level1Only = false } = options;
   const available = BOUNTY_POOL.filter(b => !usedIds.has(b.id) && !excludeIds.includes(b.id));
   if (level3Only) {
     return available
       .filter(b => b.level === 3)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, count);
+  }
+  if (level1Only) {
+    return available
+      .filter(b => b.level === 1)
       .sort(() => Math.random() - 0.5)
       .slice(0, count);
   }
@@ -283,10 +289,11 @@ function addPoolSnapshot(player, label) {
   });
 }
 
-function createSession() {
+function createSession(mode = 'normal') {
   const sessionId = uuidv4();
   const session = {
     id: sessionId,
+    mode: mode, // 'normal' or 'grandfinals'
     refreshLimit: globalDefaultRefreshLimit,
     slots: { player1: null, player2: null, admin: null },
     playerNames: { player1: null, player2: null },
@@ -303,14 +310,27 @@ function createSession() {
   return session;
 }
 
+// Get draw options for a player role based on session mode
+function getDrawOptions(session, role) {
+  if (session.mode === 'grandfinals') {
+    // In grand finals: higher ELO → level 3 only, lower ELO → level 1 only
+    const p1Elo = session.playerInfo.player1?.elo || 0;
+    const p2Elo = session.playerInfo.player2?.elo || 0;
+    const isHigher = role === 'player1' ? p1Elo >= p2Elo : p2Elo > p1Elo;
+    return { level3Only: isHigher, level1Only: !isHigher };
+  }
+  // Normal mode: higher category gets level 3 only
+  return { level3Only: session.playerInfo[role]?.isHigherCategory === true };
+}
+
 function startFirstGame(session) {
   session.gameNumber = 1;
   session.status = 'bounty_phase';
-  const p1Higher = session.playerInfo.player1?.isHigherCategory === true;
-  const p2Higher = session.playerInfo.player2?.isHigherCategory === true;
-  const p1 = drawBounties(session.usedBountyIds, 6, [], { level3Only: p1Higher });
+  const p1Opts = getDrawOptions(session, 'player1');
+  const p2Opts = getDrawOptions(session, 'player2');
+  const p1 = drawBounties(session.usedBountyIds, 6, [], p1Opts);
   const p1Ids = p1.map(b => b.id);
-  const p2 = drawBounties(session.usedBountyIds, 6, p1Ids, { level3Only: p2Higher });
+  const p2 = drawBounties(session.usedBountyIds, 6, p1Ids, p2Opts);
   if (p1.length < 6 || p2.length < 6) {
     // Fallback safety in case level-3 pool is exhausted.
     const safeP1 = p1.length < 6 ? drawBounties(session.usedBountyIds, 6, []) : p1;
@@ -379,6 +399,7 @@ function emitState(session) {
   const { slots, players: { player1: p1, player2: p2 } } = session;
   const base = {
     sessionId: session.id,
+    mode: session.mode || 'normal',
     gameNumber: session.gameNumber,
     status: session.status,
     refreshLimit: session.refreshLimit,
@@ -431,8 +452,9 @@ const requireAdmin = (req, res, next) => {
 };
 
 app.post('/api/session', (req, res) => {
-  const session = createSession();
-  res.json({ sessionId: session.id });
+  const mode = req.body?.mode === 'grandfinals' ? 'grandfinals' : 'normal';
+  const session = createSession(mode);
+  res.json({ sessionId: session.id, mode: session.mode });
 });
 
 app.get('/api/session/:id/slots', (req, res) => {
@@ -553,6 +575,8 @@ app.post('/api/admin/session/:id/refresh-limit', requireAdmin, (req, res) => {
 app.get('/overlay/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'overlay.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/join/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/grandfinals', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grandfinals.html')));
+app.get('/grandfinals/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grandfinals.html')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ── SOCKET ─────────────────────────────────────────────────────────
@@ -691,9 +715,7 @@ io.on('connection', (socket) => {
     if (player.refreshesUsed >= session.refreshLimit) return socket.emit('err', { msg: 'No refreshes remaining.' });
     const otherRole = role === 'player1' ? 'player2' : 'player1';
     const otherIds = session.players[otherRole].bounties.map(b => b.id);
-    const fresh = drawBounties(session.usedBountyIds, 6, otherIds, {
-      level3Only: session.playerInfo[role]?.isHigherCategory === true,
-    });
+    const fresh = drawBounties(session.usedBountyIds, 6, otherIds, getDrawOptions(session, role));
     if (fresh.length < 6) return socket.emit('err', { msg: 'Not enough bounties remaining to refresh.' });
     player.bounties = fresh;
     player.selectedBounty = null;
