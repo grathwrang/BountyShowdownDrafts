@@ -211,6 +211,7 @@ footer a:hover { color:var(--gold); }
           </div>
           <button class="btn-green" id="detail-force-btn" onclick="forceAdvance()" style="display:none;">Force Advance →</button>
           <button class="btn-danger" onclick="resetSession()">↺ Reset</button>
+          <button class="btn-danger" onclick="deleteSessionFromDetail()">✕ Delete</button>
           <a id="detail-open-admin-link" href="#" target="_blank">
             <button class="btn-secondary">Open Admin View →</button>
           </a>
@@ -370,11 +371,14 @@ async function loadSessions() {
     const p2 = s.playerNames?.player2 || '—';
     const statusLabel = (s.status||'').replace(/_/g,' ').toUpperCase();
     const statusClass = s.status === 'in_game' ? 'green' : 'yellow';
-    return `<div class="session-row" onclick="openSession('${s.id}')">
+    return `<div class="session-row">
       <div class="sess-id">${s.id.slice(0,8)}…</div>
-      <div class="sess-players">⚔ ${p1} vs 🛡 ${p2}</div>
+      <div class="sess-players" onclick="openSession('${s.id}')" style="cursor:pointer;">⚔ ${p1} vs 🛡 ${p2}</div>
       <div><span class="tag ${statusClass}">${statusLabel}</span> · Game ${s.gameNumber}</div>
-      <div class="sess-arrow">View →</div>
+      <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+        <span class="sess-arrow" onclick="openSession('${s.id}')" style="cursor:pointer;">View →</span>
+        <button class="btn-danger" onclick="event.stopPropagation();deleteSession('${s.id}')" style="padding:4px 8px;font-size:0.62rem;">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -565,6 +569,18 @@ async function resetSession() {
   if (!confirm('Reset this session? All progress will be lost.')) return;
   await fetch('/api/admin/session/' + currentSessionId + '/reset', { method:'POST', headers: adminHeaders() });
   loadDetail();
+}
+
+async function deleteSession(id) {
+  if (!confirm('Delete this session permanently?')) return;
+  await fetch('/api/admin/session/' + id + '/delete', { method:'POST', headers: adminHeaders() });
+  loadSessions();
+}
+
+async function deleteSessionFromDetail() {
+  if (!confirm('Delete this session permanently?')) return;
+  await fetch('/api/admin/session/' + currentSessionId + '/delete', { method:'POST', headers: adminHeaders() });
+  backToList();
 }
 
 async function setSessionRefreshLimit() {
