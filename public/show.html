@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bounty Show · Control Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+:root {
+  --gold:#c9a84c; --gold-light:#e8c97a; --gold-dark:#8a6a1f;
+  --bg-dark:#0d0c0a; --bg-mid:#1a1710; --bg-panel:#211e14; --bg-card:#2a2618;
+  --border:#3d3520; --border-gold:#5a4a1a;
+  --text:#d4c9a0; --text-dim:#8a7e5a; --text-bright:#f0e6c0;
+  --green:#2d6a2d; --green-light:#4a9a4a;
+  --red:#8b1a1a; --red-light:#c0392b;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg-dark); color:var(--text); font-family:'Crimson Text',Georgia,serif; font-size:16px; min-height:100vh; }
+
+.header { text-align:center; padding:16px 20px 12px; border-bottom:1px solid var(--border-gold); background:linear-gradient(180deg,rgba(201,168,76,0.06) 0%,transparent 100%); }
+.header h1 { font-family:'Cinzel',serif; font-size:1.4rem; font-weight:900; color:var(--gold); letter-spacing:0.12em; }
+.header .subtitle { font-family:'Cinzel',serif; font-size:0.62rem; color:var(--text-dim); letter-spacing:0.22em; margin-top:4px; }
+
+.wrap { max-width:1500px; margin:0 auto; padding:18px 20px 60px; }
+.panel { background:var(--bg-panel); border:1px solid var(--border); padding:16px; margin-bottom:16px; }
+.panel-title { font-family:'Cinzel',serif; font-size:0.7rem; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:12px; }
+
+/* LOGIN */
+.login-box { max-width:360px; margin:60px auto; }
+.login-box input { width:100%; background:var(--bg-dark); border:1px solid var(--border); color:var(--text-bright); padding:10px 13px; font-family:'Crimson Text',serif; font-size:1rem; outline:none; margin-bottom:10px; }
+.login-box input:focus { border-color:var(--gold-dark); }
+
+/* LAYOUT */
+.cols { display:grid; grid-template-columns:1fr 380px; gap:16px; align-items:start; }
+
+/* NOW IN PLAY */
+.inplay { border:1px solid var(--border-gold); background:linear-gradient(180deg,rgba(201,168,76,0.07),var(--bg-panel)); padding:16px; margin-bottom:16px; }
+.inplay.idle { border-style:dashed; opacity:0.75; }
+.inplay.failed { border-color:#7a2a2a; background:linear-gradient(180deg,rgba(139,26,26,0.16),var(--bg-panel)); }
+.inplay-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.inplay-player { font-family:'Cinzel',serif; font-size:1.5rem; color:var(--gold-light); }
+.inplay-value { font-family:'Cinzel',serif; font-size:1.9rem; color:var(--gold); }
+.inplay-bounty { font-family:'Cinzel',serif; font-size:1.05rem; color:var(--text-bright); margin-top:8px; }
+.inplay-desc { color:var(--text-dim); font-style:italic; font-size:0.92rem; margin-top:4px; line-height:1.45; }
+.failed-flag { display:inline-block; margin-top:10px; padding:4px 12px; border:1px solid #7a2a2a; background:rgba(139,26,26,0.25); color:#ff9a9a; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.16em; text-transform:uppercase; }
+
+/* ACTION BUTTONS */
+.actions { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
+.act { padding:16px 10px; font-family:'Cinzel',serif; font-size:0.9rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; border:1px solid; transition:all 0.15s; }
+.act small { display:block; font-family:'Crimson Text',serif; font-size:0.74rem; letter-spacing:0; text-transform:none; margin-top:4px; opacity:0.8; }
+.act:disabled { opacity:0.3; cursor:not-allowed; }
+.act-claim { background:linear-gradient(135deg,#1a4a1a,#2d6a2d); border-color:#3d7a3d; color:#bde8bd; }
+.act-fail { background:linear-gradient(135deg,#4a1414,#8b1a1a); border-color:#7a2a2a; color:#f0b8b8; }
+.act-end { background:var(--bg-card); border-color:var(--border-gold); color:var(--gold); }
+.act:not(:disabled):hover { filter:brightness(1.2); transform:translateY(-1px); }
+.subactions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.btn-sm { background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:6px 12px; font-family:'Cinzel',serif; font-size:0.66rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.15s; }
+.btn-sm:hover:not(:disabled) { border-color:var(--gold-dark); color:var(--gold); }
+.btn-sm:disabled { opacity:0.3; cursor:not-allowed; }
+.btn-sm.danger:hover { border-color:#c0392b; color:#c0392b; }
+
+/* BOARD */
+.board-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+.tile { background:var(--bg-card); border:1px solid var(--border); padding:11px 10px 10px; cursor:pointer; transition:all 0.15s; position:relative; min-height:104px; display:flex; flex-direction:column; }
+.tile:hover:not(.claimed) { border-color:var(--gold); background:rgba(201,168,76,0.07); transform:translateY(-1px); }
+.tile.claimed { opacity:0.62; cursor:not-allowed; border-style:dashed; }
+.tile.inplay-tile { border-color:var(--gold); box-shadow:0 0 0 1px var(--gold), 0 0 18px rgba(201,168,76,0.25); }
+.tile-top { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px; }
+.tile-value { font-family:'Cinzel',serif; font-size:1.05rem; color:var(--gold); }
+.tile-level { font-family:'Cinzel',serif; font-size:0.58rem; color:var(--text-dim); border:1px solid var(--border-gold); padding:1px 5px; letter-spacing:0.06em; }
+.tile-title { font-family:'Cinzel',serif; font-size:0.74rem; color:var(--gold-light); line-height:1.3; margin-bottom:4px; }
+.tile-desc { font-size:0.74rem; color:var(--text-dim); line-height:1.35; flex:1; overflow:hidden; }
+.tile-claimed-by { margin-top:6px; font-family:'Cinzel',serif; font-size:0.66rem; color:#80c080; letter-spacing:0.06em; border-top:1px solid var(--border); padding-top:5px; }
+.tile-fails { position:absolute; bottom:6px; right:8px; font-size:0.64rem; color:var(--text-dim); }
+.tile-reroll { position:absolute; top:4px; right:4px; background:rgba(13,12,10,0.85); border:1px solid var(--border); color:var(--text-dim); font-size:0.62rem; padding:1px 5px; cursor:pointer; opacity:0; transition:opacity 0.15s; }
+.tile:hover .tile-reroll { opacity:1; }
+.tile-reroll:hover { border-color:var(--gold); color:var(--gold); }
+
+/* SIDEBAR */
+.player-input { width:100%; background:var(--bg-dark); border:1px solid var(--border-gold); color:var(--text-bright); padding:11px 13px; font-family:'Cinzel',serif; font-size:1rem; outline:none; letter-spacing:0.06em; }
+.player-input:focus { border-color:var(--gold); }
+.hint { font-size:0.78rem; color:var(--text-dim); font-style:italic; margin-top:6px; line-height:1.45; }
+
+.lb-row { display:grid; grid-template-columns:1fr 40px 40px 56px; gap:6px; padding:7px 4px; border-bottom:1px solid var(--border); font-size:0.85rem; align-items:center; }
+.lb-row.head { font-family:'Cinzel',serif; font-size:0.58rem; color:var(--text-dim); letter-spacing:0.12em; text-transform:uppercase; border-bottom-color:var(--border-gold); }
+.lb-name { color:var(--text-bright); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lb-num { text-align:center; color:var(--text-dim); }
+.lb-earned { text-align:right; font-family:'Cinzel',serif; color:var(--gold); }
+
+.log-line { padding:5px 4px; border-bottom:1px solid var(--border); font-size:0.8rem; color:var(--text-dim); display:flex; gap:7px; }
+.log-time { color:var(--border-gold); font-size:0.72rem; flex-shrink:0; }
+.log-line b { color:var(--text-bright); font-weight:normal; }
+.log-claim b { color:#80c080; }
+.log-fail b { color:#e07070; }
+
+.stat-row { display:flex; gap:14px; flex-wrap:wrap; font-size:0.82rem; color:var(--text-dim); }
+.stat-row strong { color:var(--gold); font-family:'Cinzel',serif; }
+
+code.url { display:block; background:var(--bg-dark); border:1px solid var(--border); padding:6px 8px; font-size:0.72rem; color:var(--gold-dark); word-break:break-all; margin:4px 0; }
+.toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--bg-panel); border:1px solid var(--gold-dark); color:var(--text-bright); padding:10px 20px; font-family:'Cinzel',serif; font-size:0.78rem; letter-spacing:0.08em; z-index:999; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+.toast.show { opacity:1; }
+.toast.bad { border-color:#7a2a2a; color:#f0b8b8; }
+.hidden { display:none !important; }
+
+@media(max-width:1100px){ .cols { grid-template-columns:1fr; } .board-grid { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:700px){ .board-grid { grid-template-columns:repeat(2,1fr); } .actions { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚔ BOUNTY SHOW · CONTROL PANEL ⚔</h1>
+  <div class="subtitle">Wheel → Pick → 1v1 → Claim or Fail</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <div class="panel login-box">
+    <div class="panel-title">🔒 Host Login</div>
+    <input type="password" id="pw" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="act act-end" style="width:100%" onclick="doLogin()">Sign In</button>
+    <div id="login-error" class="hint" style="color:#e07070;"></div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel" class="wrap hidden">
+  <div class="cols">
+    <div>
+      <!-- NOW IN PLAY -->
+      <div id="inplay" class="inplay idle">
+        <div class="inplay-head">
+          <div class="inplay-player" id="ip-player">Nobody up</div>
+          <div class="inplay-value" id="ip-value"></div>
+        </div>
+        <div class="inplay-bounty" id="ip-bounty">Spin the wheel, then click a bounty below.</div>
+        <div class="inplay-desc" id="ip-desc"></div>
+        <div id="ip-failed" class="failed-flag hidden">✗ Bounty Failed — stamp is live on the overlay</div>
+
+        <div class="actions">
+          <button class="act act-claim" id="btn-claim" onclick="act('claim')">
+            Bounty Claimed
+            <small id="claim-sub">Name goes on the tile</small>
+          </button>
+          <button class="act act-fail" id="btn-fail" onclick="act('fail')">
+            Bounty Failed
+            <small>Stamp until game ends</small>
+          </button>
+          <button class="act act-end" id="btn-end" onclick="endGame()">
+            Game Over
+            <small id="end-sub">Adds a dollar, clears stamp</small>
+          </button>
+        </div>
+        <div class="subactions">
+          <button class="btn-sm" id="btn-unfail" onclick="act('unfail')">Clear Failed Flag</button>
+          <button class="btn-sm" id="btn-cancel" onclick="act('cancel')">Cancel Attempt</button>
+          <button class="btn-sm" onclick="act('undo')">↩ Undo Last</button>
+        </div>
+      </div>
+
+      <!-- BOARD -->
+      <div class="panel">
+        <div class="panel-title">The Board <span id="board-summary" style="color:var(--text-dim);letter-spacing:0.06em;text-transform:none;font-size:0.72rem;"></span></div>
+        <div class="board-grid" id="board"></div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">① Who's Up</div>
+        <input class="player-input" id="player-name" placeholder="Wheel winner's name" maxlength="40" autocomplete="off" />
+        <div class="hint">Type the name, then click their bounty on the board to put it in play.</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Stream Totals</div>
+        <div class="stat-row" id="totals"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Leaderboard</div>
+        <div class="lb-row head"><div>Player</div><div class="lb-num">✓</div><div class="lb-num">🎡</div><div class="lb-earned">$</div></div>
+        <div id="leaderboard"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Activity</div>
+        <div id="log"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Stream Deck / streamer.bot</div>
+        <div class="hint" style="margin-top:0;margin-bottom:8px;">Fire these as plain GET requests. The key is already baked in.</div>
+        <div id="deck-urls"></div>
+        <div class="subactions" style="margin-top:12px;">
+          <button class="btn-sm" onclick="window.open('/show/overlay','_blank')">Open Overlay</button>
+          <button class="btn-sm" onclick="window.open('/show/board','_blank')">Open Board Scene</button>
+          <button class="btn-sm danger" onclick="newBoard()">Deal New Board</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const socket = io();
+let TOKEN = sessionStorage.getItem('adminToken') || null;
+let KEY = null;
+let STATE = null;
+
+const el = id => document.getElementById(id);
+const money = n => '$' + Number(n || 0).toLocaleString();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg, bad) {
+  const t = el('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (bad ? ' bad' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────
+async function doLogin() {
+  const res = await fetch('/api/admin/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: el('pw').value }),
+  });
+  const d = await res.json();
+  if (!d.ok) { el('login-error').textContent = d.error || 'Login failed.'; return; }
+  TOKEN = d.token;
+  sessionStorage.setItem('adminToken', TOKEN);
+  await enterPanel();
+}
+
+async function enterPanel() {
+  const res = await fetch('/api/show/key', { headers: { 'x-admin-token': TOKEN } });
+  if (!res.ok) { sessionStorage.removeItem('adminToken'); TOKEN = null; return; }
+  KEY = (await res.json()).key;
+  el('login').classList.add('hidden');
+  el('panel').classList.remove('hidden');
+  renderDeckUrls();
+  if (STATE) render(STATE);
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────
+async function call(action, params = {}) {
+  const qs = new URLSearchParams({ ...params, key: KEY }).toString();
+  const res = await fetch(`/api/show/${action}?${qs}`, { method: 'POST' });
+  const d = await res.json().catch(() => ({ ok: false, error: 'Bad response' }));
+  if (!d.ok) toast(d.error || 'Failed', true);
+  return d;
+}
+
+function act(action) { return call(action); }
+
+function endGame() {
+  // Did they win the 1v1? A win still banks a wheel spot even when the
+  // bounty was blown.
+  const won = confirm('Did they WIN the 1v1?\n\nOK = won the game (banks a wheel spot)\nCancel = lost the game');
+  call('game-end', { result: won ? 'win' : 'loss' });
+}
+
+function selectTile(id) {
+  const name = el('player-name').value.trim();
+  if (!name) { toast('Enter the wheel winner\'s name first', true); el('player-name').focus(); return; }
+  call('select', { player: name, bounty: id });
+}
+
+function reroll(id, title, ev) {
+  ev.stopPropagation();
+  if (confirm(`Swap "${title}" off the board for a fresh bounty?`)) call('reroll', { bounty: id });
+}
+
+function newBoard() {
+  if (!confirm('Deal a brand new board? Claims on the current board are cleared. Player stats are kept.')) return;
+  call('new-board');
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+socket.on('show:state', s => { STATE = s; if (KEY) render(s); });
+
+function render(s) {
+  const a = s.active;
+  const box = el('inplay');
+  box.className = 'inplay' + (a ? (a.bountyFailed ? ' failed' : '') : ' idle');
+
+  if (a && a.bounty) {
+    el('ip-player').textContent = a.player;
+    el('ip-value').textContent = money(a.bounty.value);
+    el('ip-bounty').textContent = a.bounty.title;
+    el('ip-desc').textContent = a.bounty.description;
+    el('claim-sub').textContent = `Pays ${money(a.bounty.value)}`;
+    el('end-sub').textContent = `→ ${money(a.bounty.value + s.config.increment)} for the next one`;
+    el('ip-failed').classList.toggle('hidden', !a.bountyFailed);
+  } else {
+    el('ip-player').textContent = 'Nobody up';
+    el('ip-value').textContent = '';
+    el('ip-bounty').textContent = 'Spin the wheel, then click a bounty below.';
+    el('ip-desc').textContent = '';
+    el('ip-failed').classList.add('hidden');
+  }
+  ['btn-claim','btn-fail','btn-end','btn-cancel'].forEach(id => el(id).disabled = !a);
+  el('btn-unfail').disabled = !a || !a.bountyFailed;
+  el('btn-fail').disabled = !a || a.bountyFailed;
+
+  // Board
+  el('board-summary').textContent = `· ${s.openCount} open · ${s.claimedCount} claimed · ${money(s.boardValue)} on the table`;
+  el('board').innerHTML = s.board.map(t => {
+    const isPlay = a && String(a.bountyId) === String(t.id);
+    return `
+      <div class="tile ${t.status === 'claimed' ? 'claimed' : ''} ${isPlay ? 'inplay-tile' : ''}"
+           ${t.status === 'open' ? `onclick="selectTile('${t.id}')"` : ''}>
+        ${t.status === 'open' && !isPlay ? `<button class="tile-reroll" onclick="reroll('${t.id}','${esc(t.title).replace(/'/g, "\\'")}',event)">⟳</button>` : ''}
+        <div class="tile-top">
+          <div class="tile-value">${money(t.value)}</div>
+          <div class="tile-level">L${t.level}</div>
+        </div>
+        <div class="tile-title">${esc(t.title)}</div>
+        <div class="tile-desc">${esc(t.description)}</div>
+        ${t.claimedBy ? `<div class="tile-claimed-by">✓ ${esc(t.claimedBy)}</div>` : ''}
+        ${t.fails && !t.claimedBy ? `<div class="tile-fails">${t.fails} fail${t.fails > 1 ? 's' : ''}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  // Totals
+  el('totals').innerHTML = `
+    <span><strong>${s.claimedCount}</strong> claimed</span>
+    <span><strong>${money(s.totals.paidOut)}</strong> paid out</span>
+    <span><strong>${s.totals.attempts}</strong> attempts</span>
+    <span><strong>${money(s.boardValue)}</strong> still on the board</span>`;
+
+  // Leaderboard
+  el('leaderboard').innerHTML = s.players.length
+    ? s.players.map(p => `
+        <div class="lb-row">
+          <div class="lb-name" title="${esc(p.name)}">${esc(p.name)}</div>
+          <div class="lb-num">${p.claims}</div>
+          <div class="lb-num">${p.wheelSpots}</div>
+          <div class="lb-earned">${money(p.earned)}</div>
+        </div>`).join('')
+    : '<div class="hint">Nobody has played yet.</div>';
+
+  // Log
+  el('log').innerHTML = s.log.length
+    ? s.log.slice(0, 14).map(l => {
+        const time = new Date(l.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const cls = l.type === 'claim' ? 'log-claim' : (l.type === 'fail' ? 'log-fail' : '');
+        let text;
+        if (l.type === 'select') text = `<b>${esc(l.player)}</b> took ${esc(l.bounty)} (${money(l.value)})`;
+        else if (l.type === 'claim') text = `<b>${esc(l.player)}</b> CLAIMED ${esc(l.bounty)} — ${money(l.value)}`;
+        else if (l.type === 'fail') text = `<b>${esc(l.player)}</b> failed ${esc(l.bounty)}`;
+        else if (l.type === 'game-end') text = `game over (${l.result}) — ${esc(l.bounty || '')} ${esc(l.message || '')}`;
+        else if (l.type === 'reroll') text = `rerolled ${esc(l.bounty)} ${esc(l.message || '')}`;
+        else text = esc(l.message || l.type);
+        return `<div class="log-line ${cls}"><span class="log-time">${time}</span><span>${text}</span></div>`;
+      }).join('')
+    : '<div class="hint">No activity yet.</div>';
+}
+
+function renderDeckUrls() {
+  const base = location.origin + '/api/show/';
+  const rows = [
+    ['Bounty Claimed', 'claim'],
+    ['Bounty Failed', 'fail'],
+    ['Game Over — they won', 'game-won'],
+    ['Game Over — they lost', 'game-lost'],
+    ['Undo last action', 'undo'],
+  ];
+  el('deck-urls').innerHTML = rows.map(([label, path]) =>
+    `<div style="margin-bottom:7px;"><div style="font-family:'Cinzel',serif;font-size:0.62rem;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;">${label}</div><code class="url">${base}${path}?key=${KEY}</code></div>`
+  ).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+if (TOKEN) enterPanel();
+</script>
+</body>
+</html>

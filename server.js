@@ -452,7 +452,8 @@ const requireAdmin = (req, res, next) => {
 };
 
 app.post('/api/session', (req, res) => {
-  const mode = req.body?.mode === 'grandfinals' ? 'grandfinals' : 'normal';
+  const requested = req.body?.mode;
+  const mode = requested === 'grandfinals' ? 'grandfinals' : 'normal';
   const session = createSession(mode);
   res.json({ sessionId: session.id, mode: session.mode });
 });
@@ -571,7 +572,20 @@ app.post('/api/admin/session/:id/refresh-limit', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── STREAM BOUNTY SHOW ─────────────────────────────────────────────
+// The persistent stream-long board (wheel → pick → 1v1 → claim/fail).
+const showModule = require('./show')({
+  app, io,
+  bountyPool: BOUNTY_POOL,
+  redisCmd,
+  requireAdmin,
+});
+showModule.setAdminTokenValidator(token => adminTokens.has(token));
+
 // Page routes
+app.get('/show', (req, res) => res.sendFile(path.join(__dirname, 'public', 'show.html')));
+app.get('/show/overlay', (req, res) => res.sendFile(path.join(__dirname, 'public', 'showoverlay.html')));
+app.get('/show/board', (req, res) => res.sendFile(path.join(__dirname, 'public', 'showboard.html')));
 app.get('/overlay/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'overlay.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/join/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -770,6 +784,6 @@ io.on('connection', (socket) => {
 
 // ── START ──────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-loadFromRedis().then(() => {
+Promise.all([loadFromRedis(), showModule.load()]).then(() => {
   server.listen(PORT, () => console.log(`Bounty server running on http://localhost:${PORT}`));
 });

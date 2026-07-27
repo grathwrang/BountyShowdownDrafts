@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Bounty Show · Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+/* The board as an OBS scene — 1920x1080, transparent.
+   ?bg=1 gives it a solid backdrop for a full-screen "read the board" moment. */
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { width:1920px; height:1080px; overflow:hidden; background:transparent; font-family:'Crimson Text',Georgia,serif; color:#f0e6c0; }
+body.solid { background:radial-gradient(circle at 50% 0%, #241f14 0%, #0d0c0a 62%); }
+
+.frame { width:1920px; height:1080px; padding:44px 56px; display:flex; flex-direction:column; }
+
+.title-row { display:flex; align-items:baseline; justify-content:space-between; border-bottom:2px solid #5a4a1a; padding-bottom:14px; margin-bottom:22px; }
+h1 { font-family:'WildBreathZelda','Cinzel',serif; font-size:3.3rem; color:#e8c97a; letter-spacing:0.04em; text-shadow:0 0 44px rgba(201,168,76,0.45); }
+.totals { display:flex; gap:30px; font-family:'Cinzel',serif; font-size:0.86rem; letter-spacing:0.16em; text-transform:uppercase; color:#8a7e5a; }
+.totals strong { color:#c9a84c; font-size:1.5rem; display:block; margin-top:3px; letter-spacing:0.04em; }
+
+.grid { flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:1fr; gap:18px; }
+
+.tile {
+  position:relative; border-radius:14px; padding:34px 18px 16px;
+  border:1px solid rgba(92,61,28,0.35);
+  background-color:#e9ddb7;
+  background-image:
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,0.34), transparent 24%),
+    radial-gradient(circle at 82% 26%, rgba(120,83,37,0.10), transparent 20%),
+    linear-gradient(180deg, rgba(255,248,222,0.9), rgba(223,204,156,0.92));
+  color:#8C3500;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 8px 22px rgba(0,0,0,0.4);
+  display:flex; flex-direction:column; overflow:hidden;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.tile .value { position:absolute; top:10px; right:14px; font-family:'WildBreathZelda','Cinzel',serif; font-size:1.9rem; color:#7a4a00; line-height:1; }
+.tile .level { position:absolute; top:12px; left:14px; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.14em; text-transform:uppercase; opacity:0.62; }
+.tile .t { font-family:'WildBreathZelda','Cinzel',serif; font-size:1.4rem; line-height:1.18; margin-bottom:6px; }
+.tile .d { font-size:0.9rem; line-height:1.34; opacity:0.9; flex:1; overflow:hidden; }
+
+/* In play right now — glows and lifts */
+.tile.inplay { box-shadow:0 0 0 3px #c9a84c, 0 0 46px rgba(201,168,76,0.7), 0 10px 26px rgba(0,0,0,0.45); transform:translateY(-4px); }
+.tile.inplay::after {
+  content:attr(data-player); position:absolute; left:0; right:0; bottom:0;
+  background:linear-gradient(180deg, rgba(201,168,76,0.9), rgba(138,106,31,0.95));
+  color:#241f10; font-family:'Cinzel',serif; font-size:0.82rem; letter-spacing:0.14em; text-transform:uppercase;
+  padding:6px 10px; text-align:center;
+}
+
+/* Claimed — name banner across the tile for the rest of the stream */
+.tile.claimed { filter:saturate(0.72) brightness(0.86); }
+.tile.claimed .d { opacity:0.55; }
+.claimed-banner {
+  position:absolute; left:-14%; right:-14%; top:52%;
+  transform:translateY(-50%) rotate(-8deg);
+  background:linear-gradient(180deg, rgba(26,74,26,0.95), rgba(18,52,18,0.96));
+  border-top:2px solid #4a9a4a; border-bottom:2px solid #4a9a4a;
+  color:#cdf0cd; text-align:center; padding:9px 6px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.45);
+}
+.claimed-banner .lbl { font-family:'Cinzel',serif; font-size:0.56rem; letter-spacing:0.28em; text-transform:uppercase; opacity:0.8; }
+.claimed-banner .nm { font-family:'WildBreathZelda','Cinzel',serif; font-size:1.5rem; line-height:1.15; margin-top:2px; word-break:break-word; }
+.claimed-banner .amt { font-family:'Cinzel',serif; font-size:0.78rem; color:#ffe9a8; letter-spacing:0.1em; margin-top:2px; }
+
+/* Failed stamp while a game is live on this tile */
+.tile.failed-now::before {
+  content:'FAILED'; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%) rotate(-13deg);
+  border:4px solid #b81c1c; color:#b81c1c; opacity:0.9;
+  font-family:'Cinzel',serif; font-weight:900; font-size:1.7rem; letter-spacing:0.12em;
+  padding:5px 18px; border-radius:6px; background:rgba(255,235,235,0.3); z-index:2;
+}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="title-row">
+    <h1>The Bounty Board</h1>
+    <div class="totals" id="totals"></div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+if (new URLSearchParams(location.search).get('bg') === '1') document.body.classList.add('solid');
+
+(async function loadFont() {
+  try {
+    const font = new FontFace('WildBreathZelda', 'url("/The Wild Breath of Zelda.otf") format("opentype")');
+    await font.load();
+    document.fonts.add(font);
+  } catch (e) { /* falls back to Cinzel */ }
+})();
+
+const socket = io();
+const money = n => '$' + Number(n || 0).toLocaleString();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LEVELS = { 1: 'Level I', 2: 'Level II', 3: 'Level III' };
+
+socket.on('show:state', s => {
+  const a = s.active;
+  document.getElementById('totals').innerHTML = `
+    <div>Claimed<strong>${s.claimedCount}</strong></div>
+    <div>Paid Out<strong>${money(s.totals.paidOut)}</strong></div>
+    <div>On the Board<strong>${money(s.boardValue)}</strong></div>`;
+
+  document.getElementById('grid').innerHTML = s.board.map(t => {
+    const isPlay = a && String(a.bountyId) === String(t.id);
+    const cls = ['tile'];
+    if (t.status === 'claimed') cls.push('claimed');
+    if (isPlay) cls.push('inplay');
+    if (isPlay && a.bountyFailed) cls.push('failed-now');
+    return `
+      <div class="${cls.join(' ')}" ${isPlay ? `data-player="${esc(a.player)}"` : ''}>
+        <div class="level">${LEVELS[t.level] || ''}</div>
+        <div class="value">${money(t.value)}</div>
+        <div class="t">${esc(t.title)}</div>
+        <div class="d">${esc(t.description)}</div>
+        ${t.status === 'claimed' ? `
+          <div class="claimed-banner">
+            <div class="lbl">Bounty Claimed</div>
+            <div class="nm">${esc(t.claimedBy)}</div>
+            <div class="amt">${money(t.value)}</div>
+          </div>` : ''}
+      </div>`;
+  }).join('');
+});
+</script>
+</body>
+</html>
