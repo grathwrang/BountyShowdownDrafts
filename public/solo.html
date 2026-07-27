@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AoE2 Solo Bounty Gameshow · Grathwrang</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+/* ── THEME VARS ─────────────────────────────────────────── */
+:root {
+  --gold:#c9a84c; --gold-light:#e8c97a; --gold-dark:#8a6a1f;
+  --bg-dark:#0d0c0a; --bg-mid:#1a1710; --bg-panel:#211e14; --bg-card:#2a2618;
+  --border:#3d3520; --border-gold:#5a4a1a;
+  --text:#d4c9a0; --text-dim:#8a7e5a; --text-bright:#f0e6c0;
+  --green:#2d6a2d; --green-light:#4a9a4a;
+  --red:#8b1a1a; --red-light:#c0392b;
+  --dot-off: var(--border);
+  --dot-on: var(--green-light);
+}
+body.light {
+  --gold:#8a6a1f; --gold-light:#a07820; --gold-dark:#5a4a10;
+  --bg-dark:#f5f0e8; --bg-mid:#ede8dc; --bg-panel:#e8e0d0; --bg-card:#ddd5c0;
+  --border:#c8bfa0; --border-gold:#b0a060;
+  --text:#3a3020; --text-dim:#6a6040; --text-bright:#1a1008;
+  --green:#1a5a1a; --green-light:#2a8a2a;
+}
+body.hc {
+  --gold:#fff; --gold-light:#fff; --gold-dark:#ccc;
+  --bg-dark:#000; --bg-mid:#000; --bg-panel:#111; --bg-card:#1a1a1a;
+  --border:#fff; --border-gold:#fff;
+  --text:#fff; --text-dim:#ccc; --text-bright:#fff;
+  --green:#00ff00; --green-light:#00ff00;
+  --dot-off:#555; --dot-on:#00ff00;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg-dark); color:var(--text); font-family:'Crimson Text',Georgia,serif; font-size:17px; min-height:100vh; transition: background 0.2s, color 0.2s; }
+#app { position:relative; z-index:1; }
+
+/* THEME TOGGLE */
+.theme-toggle { position:fixed; top:12px; right:14px; z-index:1000; display:flex; gap:6px; }
+.theme-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-dim); font-size:0.72rem; font-family:'Cinzel',serif; letter-spacing:0.08em; padding:5px 10px; cursor:pointer; transition:all 0.15s; text-transform:uppercase; }
+.theme-btn:hover, .theme-btn.active { border-color:var(--gold); color:var(--gold); }
+
+/* HEADER */
+.header { text-align:center; padding:28px 20px 18px; border-bottom:1px solid var(--border-gold); background:linear-gradient(180deg,rgba(201,168,76,0.06) 0%,transparent 100%); }
+.header h1 { font-family:'Cinzel',serif; font-size:1.9rem; font-weight:900; color:var(--gold); letter-spacing:0.12em; text-shadow:0 0 40px rgba(201,168,76,0.3); }
+.header .subtitle { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.25em; margin-top:5px; }
+.header .subtitle a { color:var(--gold-dark); text-decoration:none; }
+.header .subtitle a:hover { color:var(--gold); }
+.top-nav { margin-top:12px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+.top-nav-link { color:var(--gold); border:1px solid var(--border-gold); padding:6px 12px; text-decoration:none; font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; transition:all 0.15s; }
+.top-nav-link:hover { background:rgba(201,168,76,0.08); border-color:var(--gold); }
+
+.screen { display:none; padding:24px 20px; max-width:900px; margin:0 auto; }
+.screen.active { display:block; }
+
+/* BUTTONS */
+.btn-primary { background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:#0d0c0a; border:none; padding:12px 36px; font-family:'Cinzel',serif; font-size:0.88rem; font-weight:600; letter-spacing:0.12em; cursor:pointer; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); transition:all 0.2s; text-transform:uppercase; }
+.btn-primary:hover { filter:brightness(1.15); transform:translateY(-1px); }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+.btn-secondary { background:transparent; color:var(--gold); border:1px solid var(--border-gold); padding:10px 28px; font-family:'Cinzel',serif; font-size:0.8rem; font-weight:600; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; text-transform:uppercase; }
+.btn-secondary:hover { border-color:var(--gold); background:rgba(201,168,76,0.06); }
+.btn-secondary:disabled { opacity:0.35; cursor:not-allowed; }
+.btn-green { background:linear-gradient(135deg,#1a4a1a,#2d6a2d); color:#a0d4a0; border:1px solid #2d5a2d; padding:11px 28px; font-family:'Cinzel',serif; font-size:0.82rem; font-weight:600; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; text-transform:uppercase; }
+.btn-green:hover { filter:brightness(1.15); }
+.btn-green:disabled { opacity:0.35; cursor:not-allowed; }
+.btn-danger { background:transparent; color:#c0392b; border:1px solid #5a1a1a; padding:9px 20px; font-family:'Cinzel',serif; font-size:0.75rem; cursor:pointer; transition:all 0.2s; text-transform:uppercase; letter-spacing:0.08em; }
+.btn-danger:hover { border-color:#c0392b; background:rgba(139,26,26,0.1); }
+body.hc .btn-green { background:#003300; border-color:#00ff00; color:#00ff00; }
+body.hc .btn-danger { border-color:red; color:red; }
+
+/* VERDICT BUTTONS — the two buttons that decide the money */
+.verdict-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; max-width:520px; margin:0 auto; }
+.btn-verdict { padding:22px 18px; font-family:'Cinzel',serif; font-size:1.1rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; transition:all 0.18s; border:1px solid; }
+.btn-verdict small { display:block; font-family:'Crimson Text',serif; font-size:0.78rem; letter-spacing:0.02em; text-transform:none; margin-top:6px; opacity:0.85; }
+.btn-win { background:linear-gradient(135deg,#1a4a1a,#2d6a2d); border-color:#3d7a3d; color:#bde8bd; }
+.btn-win:hover { filter:brightness(1.2); transform:translateY(-2px); }
+.btn-fail { background:linear-gradient(135deg,#4a1414,#8b1a1a); border-color:#7a2a2a; color:#f0b8b8; }
+.btn-fail:hover { filter:brightness(1.2); transform:translateY(-2px); }
+body.hc .btn-win { background:#003300; border-color:#00ff00; color:#00ff00; }
+body.hc .btn-fail { background:#330000; border-color:red; color:red; }
+
+/* PANEL */
+.panel { background:var(--bg-panel); border:1px solid var(--border); padding:22px; position:relative; }
+.panel::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold-dark),transparent); }
+.panel-title { font-family:'Cinzel',serif; font-size:0.75rem; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:14px; }
+
+/* INPUTS */
+.input-group { margin-bottom:14px; }
+.input-group label { display:block; font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:5px; }
+.input-group input[type=text], .input-group input[type=number] { width:100%; background:var(--bg-dark); border:1px solid var(--border); color:var(--text-bright); padding:9px 13px; font-family:'Crimson Text',serif; font-size:1rem; outline:none; transition:border-color 0.2s; letter-spacing:0.05em; }
+.input-group input:focus { border-color:var(--gold-dark); }
+.config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.check-row { display:flex; align-items:center; gap:9px; font-size:0.88rem; color:var(--text-dim); margin-top:4px; }
+.check-row input { width:16px; height:16px; accent-color:var(--gold); }
+
+/* SCOREBOARD — always-visible money bar */
+.scoreboard { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border-gold); margin-bottom:20px; }
+.score-cell { background:var(--bg-panel); padding:14px 10px; text-align:center; }
+.score-label { font-family:'Cinzel',serif; font-size:0.6rem; color:var(--text-dim); letter-spacing:0.2em; text-transform:uppercase; }
+.score-value { font-family:'Cinzel',serif; font-size:1.5rem; color:var(--gold); margin-top:4px; line-height:1.1; }
+.score-value.small { font-size:1.05rem; color:var(--text-bright); }
+.score-cell.pot { background:linear-gradient(180deg,rgba(201,168,76,0.12),var(--bg-panel)); }
+.score-cell.pot .score-value { color:var(--gold-light); text-shadow:0 0 26px rgba(201,168,76,0.4); }
+
+/* PHASE BAR */
+.phase-bar { display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 20px; background:rgba(201,168,76,0.03); border-bottom:1px solid var(--border); font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim); }
+.phase-label { color:var(--gold); }
+
+/* BOUNTY GRID */
+.bounty-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:14px 0; }
+.bounty-card { background:var(--bg-card); border:1px solid var(--border); padding:13px 11px; cursor:pointer; transition:all 0.16s; min-height:90px; position:relative; }
+.bounty-card:hover:not(.locked-card) { border-color:var(--gold-dark); background:rgba(201,168,76,0.06); transform:translateY(-1px); }
+.bounty-card.selected { border-color:var(--gold); background:rgba(201,168,76,0.1); box-shadow:0 0 14px rgba(201,168,76,0.12); }
+.bounty-card.selected::after { content:'✦'; position:absolute; top:7px; right:34px; color:var(--gold); font-size:0.7rem; }
+.bounty-level { position:absolute; top:7px; right:8px; min-width:22px; height:18px; padding:0 6px; border:1px solid var(--border-gold); color:var(--gold-light); font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; display:flex; align-items:center; justify-content:center; background:rgba(13,12,10,0.72); }
+body.light .bounty-level { background:rgba(245,240,232,0.82); }
+body.hc .bounty-level { border-color:#fff; color:#fff; background:#000; }
+.bounty-card.locked-card { cursor:default; }
+.bounty-title { font-family:'Cinzel',serif; font-size:0.74rem; color:var(--gold-light); letter-spacing:0.07em; margin-bottom:5px; line-height:1.3; }
+.bounty-desc { font-size:0.8rem; color:var(--text-dim); line-height:1.4; }
+
+/* CONFIRM + IN GAME */
+.confirm-box { text-align:center; padding:28px; border:1px solid var(--gold-dark); background:var(--bg-panel); }
+.confirm-box h3 { font-family:'Cinzel',serif; font-size:1rem; color:var(--gold); margin-bottom:7px; letter-spacing:0.1em; }
+.confirm-pick-name { font-family:'Cinzel',serif; font-size:1.4rem; color:var(--text-bright); margin:10px 0; }
+.game-banner { text-align:center; padding:26px 22px; border:1px solid var(--border-gold); background:var(--bg-panel); margin:14px 0; }
+.game-number { font-family:'Cinzel',serif; font-size:0.65rem; color:var(--text-dim); letter-spacing:0.22em; text-transform:uppercase; }
+.selected-bounty-name { font-family:'Cinzel',serif; font-size:1.6rem; color:var(--gold); margin:9px 0; line-height:1.25; }
+.selected-bounty-desc { color:var(--text); font-style:italic; font-size:1rem; line-height:1.5; }
+.playing-for { font-family:'Cinzel',serif; font-size:0.7rem; color:var(--text-dim); letter-spacing:0.2em; text-transform:uppercase; margin-top:18px; }
+.playing-for strong { display:block; font-size:2.6rem; color:var(--gold-light); margin-top:6px; text-shadow:0 0 30px rgba(201,168,76,0.35); }
+
+/* LADDER — shows what each remaining bounty is worth if the run keeps failing */
+.ladder { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+.ladder-step { border:1px solid var(--border); padding:5px 11px; font-family:'Cinzel',serif; font-size:0.72rem; color:var(--text-dim); letter-spacing:0.06em; }
+.ladder-step.now { border-color:var(--gold); color:var(--gold-light); background:rgba(201,168,76,0.08); }
+.ladder-step.past { opacity:0.4; }
+.ladder-step.past.win { border-color:#2d5a2d; color:#80c080; opacity:0.7; }
+.ladder-step.past.fail { border-color:#5a1a1a; color:#e07070; opacity:0.7; }
+
+/* HISTORY */
+.result-item { display:grid; grid-template-columns:64px 1fr 90px 80px; gap:10px; align-items:center; padding:10px 9px; border-bottom:1px solid var(--border); font-size:0.88rem; }
+.result-game { font-family:'Cinzel',serif; font-size:0.67rem; color:var(--text-dim); letter-spacing:0.1em; }
+.result-title { color:var(--text-bright); }
+.result-title span { display:block; color:var(--text-dim); font-size:0.78rem; font-style:italic; }
+.result-prize { font-family:'Cinzel',serif; color:var(--gold); text-align:right; }
+.result-prize.lost { color:var(--text-dim); text-decoration:line-through; }
+
+/* MISC */
+.flex-center { display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap; }
+.text-center { text-align:center; }
+.mt-8 { margin-top:8px; } .mt-16 { margin-top:16px; } .mt-24 { margin-top:24px; }
+.divider { display:flex; align-items:center; gap:10px; margin:16px 0; }
+.divider::before, .divider::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--border-gold),transparent); }
+.divider-icon { color:var(--gold-dark); }
+.error-msg { background:rgba(139,26,26,0.18); border:1px solid #5a1a1a; color:#e07070; padding:9px 13px; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.05em; margin:8px 0; }
+.info-msg { background:rgba(201,168,76,0.05); border:1px solid var(--border-gold); color:var(--text-dim); padding:9px 13px; font-size:0.82rem; margin:8px 0; }
+.tag { display:inline-block; padding:2px 7px; font-family:'Cinzel',serif; font-size:0.64rem; letter-spacing:0.1em; text-transform:uppercase; }
+.tag.green { background:rgba(45,106,45,0.2); border:1px solid #2d5a2d; color:#80c080; }
+.tag.red { background:rgba(139,26,26,0.18); border:1px solid #5a1a1a; color:#e07070; }
+.copy-btn { background:none; border:1px solid var(--border); color:var(--text-dim); padding:3px 9px; font-size:0.73rem; cursor:pointer; transition:all 0.15s; font-family:'Crimson Text',serif; }
+.copy-btn:hover { border-color:var(--gold-dark); color:var(--gold); }
+.done-title { font-family:'Cinzel',serif; font-size:1.8rem; color:var(--gold); margin-bottom:10px; }
+.grand-total { font-family:'Cinzel',serif; font-size:3.4rem; color:var(--gold-light); text-shadow:0 0 40px rgba(201,168,76,0.4); margin:6px 0 4px; }
+
+/* HOST CONTROLS */
+.host-panel { max-width:900px; margin:26px auto 0; padding:0 20px; }
+.host-panel summary { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--text-dim); letter-spacing:0.18em; text-transform:uppercase; cursor:pointer; list-style:none; padding:8px 0; border-top:1px solid var(--border); }
+.host-panel summary:hover { color:var(--gold); }
+.host-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.host-row label { font-family:'Cinzel',serif; font-size:0.62rem; color:var(--text-dim); letter-spacing:0.12em; text-transform:uppercase; }
+.host-row input[type=number] { width:74px; background:var(--bg-dark); border:1px solid var(--border); color:var(--text-bright); padding:6px; font-size:0.9rem; text-align:center; outline:none; font-family:'Crimson Text',serif; }
+
+footer { text-align:center; padding:16px; font-size:0.68rem; color:var(--text-dim); border-top:1px solid var(--border); margin-top:40px; font-family:'Cinzel',serif; letter-spacing:0.1em; }
+footer a { color:var(--gold-dark); text-decoration:none; }
+footer a:hover { color:var(--gold); }
+
+@media(max-width:600px){
+  .bounty-grid { grid-template-columns:1fr 1fr; }
+  .config-grid { grid-template-columns:1fr; }
+  .scoreboard { grid-template-columns:1fr 1fr; }
+  .verdict-row { grid-template-columns:1fr; }
+  .result-item { grid-template-columns:52px 1fr 70px; }
+  .result-item .result-status { display:none; }
+  .theme-toggle { top:8px; right:8px; }
+}
+</style>
+</head>
+<body>
+<div class="theme-toggle">
+  <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+  <button class="theme-btn" id="btn-light" onclick="setTheme('light')">Light</button>
+  <button class="theme-btn" id="btn-hc" onclick="setTheme('hc')">HC</button>
+</div>
+
+<div id="app">
+  <div class="header">
+    <h1><a href="/solo" style="color:inherit;text-decoration:none;">💰 BOUNTY GAMESHOW 💰</a></h1>
+    <div class="subtitle">Solo Run · Age of Empires II · <a href="https://www.twitch.tv/grathwrang" target="_blank">Grathwrang Tournament Series</a></div>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a class="top-nav-link" href="/">Bounty Draft (2P)</a>
+      <a class="top-nav-link" href="/Schedule.html">Bounty Schedule</a>
+      <a class="top-nav-link" href="/grandfinals">Grand Finals</a>
+    </nav>
+  </div>
+
+  <!-- LANDING (no session in URL) -->
+  <div id="screen-landing" class="screen active">
+    <div class="text-center mt-24">
+      <p style="color:var(--text-dim);font-style:italic;font-size:1.05rem;margin-bottom:8px;">One contestant. Six bounties. A pot that only grows when you fail.</p>
+      <div class="flex-center mt-16">
+        <button class="btn-primary" onclick="createShow()">Start a New Show</button>
+      </div>
+      <div id="landing-error"></div>
+    </div>
+
+    <div style="max-width:680px;margin:44px auto 0;">
+      <div class="divider"><div class="divider-icon">◆</div></div>
+      <div class="panel-title text-center" style="margin-bottom:20px;">How the Show Works</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">① DEAL</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">The contestant is dealt <strong style="color:var(--text);">6 bounties</strong>, balanced across levels 1–3. That is the whole run — six bounties, six games.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">② PICK</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">Before each game they choose one bounty from what's left of the pool and lock it in. The pool shrinks by one every game.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">③ PLAY</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">They play the game for the pot on the board. When it's over the host calls it: <strong style="color:#80c080;">WIN</strong> or <strong style="color:#e07070;">FAIL</strong>.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);padding:16px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;">④ THE POT</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.6;">The pot starts at <strong style="color:var(--gold);">$10</strong>. Every failed bounty adds <strong style="color:var(--gold);">$1</strong> to the next one. Wins are banked and the running total carries to the end of the show.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="screen">
+    <div style="max-width:480px;margin:12px auto 0;">
+      <div class="panel">
+        <div class="panel-title">🎬 Set Up the Show</div>
+        <div class="input-group">
+          <label>Contestant Name</label>
+          <input type="text" id="contestant-input" placeholder="e.g. Grathwrang" maxlength="40" />
+        </div>
+        <div class="config-grid">
+          <div class="input-group">
+            <label>Starting Prize ($)</label>
+            <input type="number" id="cfg-start" value="10" min="0" max="100000" />
+          </div>
+          <div class="input-group">
+            <label>Added Per Fail ($)</label>
+            <input type="number" id="cfg-increment" value="1" min="0" max="10000" />
+          </div>
+          <div class="input-group">
+            <label>Number of Bounties</label>
+            <input type="number" id="cfg-total" value="6" min="1" max="12" />
+          </div>
+          <div class="input-group">
+            <label>Pool Refreshes</label>
+            <input type="number" id="cfg-refreshes" value="0" min="0" max="20" />
+          </div>
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="cfg-reset" />
+          Reset the pot to the starting prize after a win
+        </label>
+        <div id="setup-error"></div>
+        <div class="flex-center mt-16">
+          <button class="btn-primary" onclick="startRun()" style="width:100%">Deal the Bounties →</button>
+        </div>
+      </div>
+      <div class="info-msg mt-16" style="text-align:center;">
+        Leave the box unticked and the pot never goes down — it only climbs on failures, exactly as a bounty ladder should.
+      </div>
+    </div>
+  </div>
+
+  <!-- PICKING -->
+  <div id="screen-picking" class="screen">
+    <div id="pick-scoreboard"></div>
+    <div class="panel-title">Choose This Game's Bounty</div>
+    <p style="color:var(--text-dim);font-size:0.86rem;margin-bottom:11px;font-style:italic;">
+      Pick one bounty to attempt for the pot. It leaves the pool either way — win or fail.
+    </p>
+    <div id="pick-pool-info" style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--text-dim);letter-spacing:0.1em;margin-bottom:8px;"></div>
+    <div class="bounty-grid" id="bounty-grid"></div>
+    <div id="pick-error"></div>
+    <div class="flex-center mt-16">
+      <button class="btn-secondary" id="refresh-btn" onclick="emit('soloRefresh')">↺ Refresh Pool</button>
+      <button class="btn-green" id="lockin-btn" onclick="emit('soloLockIn')" disabled>Lock In Bounty ✓</button>
+    </div>
+    <div id="pick-ladder" class="mt-16"></div>
+    <div class="mt-24" id="pick-history-section" style="display:none;">
+      <div class="panel-title">Results So Far</div>
+      <div id="pick-history-list"></div>
+    </div>
+  </div>
+
+  <!-- CONFIRM -->
+  <div id="screen-confirm" class="screen">
+    <div style="max-width:520px;margin:24px auto 0;">
+      <div class="confirm-box">
+        <h3>Locking It In</h3>
+        <p style="color:var(--text-dim);font-size:0.88rem;">This game's bounty:</p>
+        <div class="confirm-pick-name" id="confirm-name">—</div>
+        <div style="color:var(--text-dim);font-style:italic;font-size:0.9rem;" id="confirm-desc"></div>
+        <div class="playing-for">Playing For<strong id="confirm-prize">$10</strong></div>
+        <div class="flex-center mt-24">
+          <button class="btn-danger" onclick="emit('soloUnlock')">← Go Back</button>
+          <button class="btn-green" onclick="emit('soloBegin')">Start the Game →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN GAME -->
+  <div id="screen-ingame" class="screen">
+    <div id="ingame-scoreboard"></div>
+    <div class="game-banner">
+      <div class="game-number">Bounty <span id="ingame-num"></span> · In Progress</div>
+      <div class="selected-bounty-name" id="ingame-bounty-name"></div>
+      <div class="selected-bounty-desc" id="ingame-bounty-desc"></div>
+      <div class="playing-for">Playing For<strong id="ingame-prize">$10</strong></div>
+    </div>
+    <div class="divider"><div class="divider-icon">⚔</div></div>
+    <p class="text-center" style="color:var(--text-dim);font-style:italic;margin-bottom:16px;">Play it out, then call the result.</p>
+    <div class="verdict-row">
+      <button class="btn-verdict btn-win" onclick="callResult('win')">
+        Bounty Won
+        <small id="win-sub">Bank the pot</small>
+      </button>
+      <button class="btn-verdict btn-fail" onclick="callResult('fail')">
+        Bounty Failed
+        <small id="fail-sub">Next bounty is worth more</small>
+      </button>
+    </div>
+    <div class="mt-24" id="ingame-history-section" style="display:none;">
+      <div class="panel-title">Results So Far</div>
+      <div id="ingame-history-list"></div>
+    </div>
+  </div>
+
+  <!-- DONE -->
+  <div id="screen-done" class="screen">
+    <div class="text-center">
+      <div class="done-title">💰 Show Complete 💰</div>
+      <p style="color:var(--text-dim);font-style:italic;" id="done-sub"></p>
+      <div style="font-family:'Cinzel',serif;font-size:0.68rem;color:var(--text-dim);letter-spacing:0.22em;text-transform:uppercase;margin-top:24px;">Total Winnings</div>
+      <div class="grand-total" id="done-total">$0</div>
+      <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text-dim);letter-spacing:0.12em;" id="done-record"></div>
+    </div>
+    <div class="panel mt-24" style="max-width:640px;margin-left:auto;margin-right:auto;">
+      <div class="panel-title">The Card</div>
+      <div id="done-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOST CONTROLS -->
+<details class="host-panel" id="host-panel" style="display:none;">
+  <summary>▸ Host Controls</summary>
+  <div class="panel" style="margin-top:10px;">
+    <div class="host-row">
+      <button class="btn-secondary" id="undo-btn" onclick="undoResult()">↩ Undo Last Result</button>
+      <button class="btn-danger" onclick="resetRun()">↺ Restart Show</button>
+    </div>
+    <div class="host-row">
+      <label>Current Pot $</label>
+      <input type="number" id="host-prize" min="0" onchange="adjustMoney()" />
+      <label>Banked $</label>
+      <input type="number" id="host-banked" min="0" onchange="adjustMoney()" />
+      <label>Refreshes</label>
+      <input type="number" id="host-refresh-limit" min="0" max="20" onchange="setRefreshLimit()" />
+    </div>
+    <div class="host-row" style="margin-bottom:0;">
+      <span style="font-size:0.8rem;color:var(--text-dim);">Show link:</span>
+      <code id="host-link" style="color:var(--gold);font-size:0.78rem;word-break:break-all;background:var(--bg-dark);border:1px solid var(--border);padding:5px 8px;"></code>
+      <button class="copy-btn" onclick="copyShowLink()">Copy</button>
+    </div>
+    <div style="font-size:0.78rem;color:var(--text-dim);margin-top:10px;line-height:1.5;">
+      Anyone with this link can view and drive the run — open it on the contestant's machine and on the host's. Live JSON for an overlay: <code style="color:var(--gold-dark);" id="host-api"></code>
+    </div>
+  </div>
+</details>
+
+<footer>Created by <strong>six_angry_geese</strong> &nbsp;·&nbsp; <a href="https://www.twitch.tv/grathwrang" target="_blank">Grathwrang</a></footer>
+
+<script>
+const socket = io();
+const S = { sessionId: null, state: null };
+
+// ── THEME ─────────────────────────────────────────────────────────
+function setTheme(t) {
+  document.body.classList.remove('light','hc');
+  if (t === 'light') document.body.classList.add('light');
+  if (t === 'hc') document.body.classList.add('hc');
+  localStorage.setItem('theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  el('btn-' + t).classList.add('active');
+}
+(function loadTheme() { setTheme(localStorage.getItem('theme') || 'dark'); })();
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function html(id, h) { const e = el(id); if (e) e.innerHTML = h; }
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); el('screen-' + id).classList.add('active'); }
+function money(n) { return '$' + Number(n || 0).toLocaleString(); }
+function esc(str) { return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function emit(evt, payload) { socket.emit(evt, payload || {}); }
+
+// ── LANDING ───────────────────────────────────────────────────────
+async function createShow() {
+  try {
+    const res = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'solo' }),
+    });
+    const d = await res.json();
+    if (!d.sessionId) throw new Error('No session returned');
+    location.href = '/solo/' + d.sessionId;
+  } catch (e) {
+    html('landing-error', '<div class="error-msg">Could not create the show. Try again.</div>');
+  }
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────
+function readConfig() {
+  return {
+    startingPrize: parseInt(el('cfg-start').value, 10),
+    increment: parseInt(el('cfg-increment').value, 10),
+    totalBounties: parseInt(el('cfg-total').value, 10),
+    resetOnWin: el('cfg-reset').checked,
+  };
+}
+
+function startRun() {
+  const contestantName = el('contestant-input').value.trim();
+  if (!contestantName) {
+    html('setup-error', '<div class="error-msg">Enter the contestant\'s name first.</div>');
+    el('contestant-input').focus();
+    return;
+  }
+  emit('soloSetRefreshLimit', { limit: parseInt(el('cfg-refreshes').value, 10) || 0 });
+  emit('soloStart', { contestantName, config: readConfig() });
+}
+
+function callResult(result) {
+  const st = S.state;
+  const title = st?.selectedBounty?.title || 'this bounty';
+  const msg = result === 'win'
+    ? `Confirm WIN on "${title}" and bank ${money(st?.prize)}?`
+    : `Confirm FAIL on "${title}"? The next bounty goes up to ${money((st?.prize || 0) + (st?.config?.increment || 0))}.`;
+  if (!confirm(msg)) return;
+  emit('soloResult', { result });
+}
+
+function undoResult() { if (confirm('Undo the last result?')) emit('soloUndo'); }
+function resetRun() { if (confirm('Restart the whole show? All results are wiped and new bounties are dealt.')) emit('soloReset'); }
+function adjustMoney() { emit('soloAdjustPrize', { prize: el('host-prize').value, banked: el('host-banked').value }); }
+function setRefreshLimit() { emit('soloSetRefreshLimit', { limit: parseInt(el('host-refresh-limit').value, 10) || 0 }); }
+function copyShowLink() { navigator.clipboard.writeText(location.origin + '/solo/' + S.sessionId); }
+
+// ── SOCKET ────────────────────────────────────────────────────────
+socket.on('err', ({ msg, redirect }) => {
+  if (redirect) { location.href = redirect; return; }
+  const target = el('screen-picking').classList.contains('active') ? 'pick-error' : 'setup-error';
+  html(target, `<div class="error-msg">${esc(msg)}</div>`);
+  setTimeout(() => html(target, ''), 4000);
+});
+
+socket.on('soloState', render);
+
+// ── RENDER ────────────────────────────────────────────────────────
+function render(st) {
+  S.state = st;
+  el('host-panel').style.display = 'block';
+  el('host-link').textContent = location.origin + '/solo/' + st.sessionId;
+  el('host-api').textContent = location.origin + '/api/solo/' + st.sessionId;
+  el('host-prize').value = st.prize;
+  el('host-banked').value = st.banked;
+  el('host-refresh-limit').value = st.refreshLimit || 0;
+  el('undo-btn').disabled = !st.attemptsMade;
+
+  if (st.status === 'waiting') return renderSetup(st);
+  if (st.status === 'bounty_phase') return st.lockedIn ? renderConfirm(st) : renderPicking(st);
+  if (st.status === 'in_game') return renderInGame(st);
+  if (st.status === 'done') return renderDone(st);
+}
+
+function renderSetup(st) {
+  show('setup');
+  el('cfg-start').value = st.config.startingPrize;
+  el('cfg-increment').value = st.config.increment;
+  el('cfg-total').value = st.config.totalBounties;
+  el('cfg-reset').checked = !!st.config.resetOnWin;
+  el('cfg-refreshes').value = st.refreshLimit || 0;
+  if (st.contestant && !el('contestant-input').value) el('contestant-input').value = st.contestant;
+}
+
+function scoreboard(st) {
+  return `
+    <div class="scoreboard">
+      <div class="score-cell">
+        <div class="score-label">Contestant</div>
+        <div class="score-value small">${esc(st.contestant || '—')}</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Bounty</div>
+        <div class="score-value">${Math.min(st.attemptsMade + 1, st.attemptsTotal)}<span style="font-size:0.9rem;color:var(--text-dim);"> / ${st.attemptsTotal}</span></div>
+      </div>
+      <div class="score-cell pot">
+        <div class="score-label">Current Pot</div>
+        <div class="score-value">${money(st.prize)}</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Banked</div>
+        <div class="score-value">${money(st.banked)}</div>
+      </div>
+    </div>`;
+}
+
+// The ladder shows what every bounty in the run is (or was) worth.
+function ladder(st) {
+  const steps = [];
+  st.attempts.forEach(a => {
+    steps.push(`<div class="ladder-step past ${a.result}">${a.result === 'win' ? '✓' : '✗'} ${money(a.prize)}</div>`);
+  });
+  let projected = st.prize;
+  for (let i = st.attemptsMade; i < st.attemptsTotal; i++) {
+    steps.push(`<div class="ladder-step${i === st.attemptsMade ? ' now' : ''}">${money(projected)}</div>`);
+    projected += st.config.increment;
+  }
+  return `<div style="font-family:'Cinzel',serif;font-size:0.62rem;color:var(--text-dim);letter-spacing:0.18em;text-transform:uppercase;text-align:center;margin-bottom:7px;">The Ladder — if every remaining bounty is failed</div><div class="ladder">${steps.join('')}</div>`;
+}
+
+function renderPicking(st) {
+  show('picking');
+  html('pick-scoreboard', scoreboard(st));
+  html('pick-pool-info', `Pool: ${st.bounties.length} bounties remaining · This game is worth ${money(st.prize)}`);
+
+  const grid = el('bounty-grid');
+  grid.innerHTML = '';
+  st.bounties.forEach(b => {
+    const sel = st.selectedBounty && st.selectedBounty.id === b.id;
+    const div = document.createElement('div');
+    div.className = 'bounty-card' + (sel ? ' selected' : '');
+    div.innerHTML = `<div class="bounty-level">L${b.level || 1}</div><div class="bounty-title">${esc(b.title)}</div><div class="bounty-desc">${esc(b.description)}</div>`;
+    div.onclick = () => emit('soloSelect', { bountyId: b.id });
+    grid.appendChild(div);
+  });
+
+  el('lockin-btn').disabled = !st.selectedBounty;
+  const refreshesLeft = (st.refreshLimit || 0) - (st.refreshesUsed || 0);
+  const rb = el('refresh-btn');
+  rb.disabled = refreshesLeft <= 0;
+  rb.textContent = `↺ Refresh Pool (${Math.max(0, refreshesLeft)})`;
+  rb.style.display = (st.refreshLimit || 0) > 0 ? 'inline-block' : 'none';
+
+  html('pick-ladder', ladder(st));
+  renderResults(st, 'pick-history-list');
+  el('pick-history-section').style.display = st.attemptsMade ? 'block' : 'none';
+}
+
+function renderConfirm(st) {
+  show('confirm');
+  html('confirm-name', esc(st.selectedBounty?.title || '—'));
+  html('confirm-desc', esc(st.selectedBounty?.description || ''));
+  html('confirm-prize', money(st.prize));
+}
+
+function renderInGame(st) {
+  show('ingame');
+  html('ingame-scoreboard', scoreboard(st));
+  html('ingame-num', `${st.attemptsMade + 1} of ${st.attemptsTotal}`);
+  html('ingame-bounty-name', esc(st.selectedBounty?.title || '—'));
+  html('ingame-bounty-desc', esc(st.selectedBounty?.description || ''));
+  html('ingame-prize', money(st.prize));
+  html('win-sub', `Bank ${money(st.prize)}`);
+  const isLast = st.attemptsMade + 1 >= st.attemptsTotal;
+  html('fail-sub', isLast ? 'No pot, no bounties left' : `Next bounty rises to ${money(st.prize + st.config.increment)}`);
+  renderResults(st, 'ingame-history-list');
+  el('ingame-history-section').style.display = st.attemptsMade ? 'block' : 'none';
+}
+
+function renderDone(st) {
+  show('done');
+  const name = st.contestant || 'The contestant';
+  html('done-sub', st.wins
+    ? `${esc(name)} took ${st.wins} of ${st.attemptsMade} bounties.`
+    : `${esc(name)} went home empty-handed. Brutal.`);
+  html('done-total', money(st.banked));
+  html('done-record', `${st.wins} won · ${st.failures} failed · pot finished at ${money(st.prize)}`);
+  renderResults(st, 'done-history');
+}
+
+function renderResults(st, containerId) {
+  if (!st.attempts?.length) {
+    html(containerId, '<div style="color:var(--text-dim);font-style:italic;padding:9px 0;font-size:0.83rem;">No bounties attempted yet.</div>');
+    return;
+  }
+  html(containerId, st.attempts.map(a => `
+    <div class="result-item">
+      <div class="result-game">#${a.game}</div>
+      <div class="result-title">${esc(a.bounty.title)}<span>L${a.bounty.level || 1} · ${esc(a.bounty.description)}</span></div>
+      <div class="result-prize${a.result === 'win' ? '' : ' lost'}">${money(a.prize)}</div>
+      <div class="result-status">${a.result === 'win' ? '<span class="tag green">Won</span>' : '<span class="tag red">Failed</span>'}</div>
+    </div>`).join(''));
+}
+
+// ── URL ROUTING ───────────────────────────────────────────────────
+(function init() {
+  const m = location.pathname.match(/^\/solo\/([a-zA-Z0-9-]+)$/i);
+  if (!m) { show('landing'); return; }
+  S.sessionId = m[1];
+  const doJoin = () => emit('soloJoin', { sessionId: S.sessionId });
+  socket.on('connect', doJoin);
+  if (socket.connected) doJoin();
+})();
+</script>
+</body>
+</html>
