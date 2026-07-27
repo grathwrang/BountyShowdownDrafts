@@ -16,26 +16,52 @@ Then open http://localhost:3000
 6. Once both locked in, both click "Next Game" to advance (or Admin can advance)
 7. Bounties are recorded, marked used, and new ones drawn for the next game
 
-## Solo Gameshow (1 player)
-A single-contestant format at **/solo** — no opponent, no join codes, one escalating prize pot.
+## Stream Bounty Show (`/show`)
+A single board that lives for the whole stream. The wheel picks a viewer, they take a bounty
+off the board, they queue a ranked 1v1, and you call the result with three buttons.
 
-1. Go to **/solo** → **Start a New Show** → you land on `/solo/<id>`
-2. Enter the contestant's name (and tweak the money if you want), then **Deal the Bounties**
-3. **6 bounties** are dealt at once, balanced two per level — that's the whole run
-4. Before each game the contestant picks one from the remaining pool and locks it in
-5. After the game the host calls it: **Bounty Won** or **Bounty Failed**
-6. After all 6 the show ends with a full card and the total winnings
+### The loop
+1. Spin the wheel (your own infrastructure) → type the winner's name in **Who's Up**
+2. They pick a bounty → click that tile on the board. It goes live on the overlay.
+3. They queue and play the 1v1. Then one of:
+   - **Bounty Claimed** — animation plays, their name goes on the tile for the rest of the
+     stream, the tile's dollar value is paid out to them.
+   - **Bounty Failed** — animation plays and a FAILED stamp stays on the overlay for the rest
+     of that game. They can still win the 1v1 and bank a wheel spot.
+4. **Game Over** — you're asked whether they won the 1v1. The bounty (if unclaimed) gains
+   **$1**, the FAILED stamp clears, and the bounty goes back on the board for someone else.
 
-### The money
-- The pot starts at **$10**
-- Every **failed** bounty adds **$1** to the next bounty's pot
-- A **win** banks the current pot; the pot does not go up (and by default does not reset either)
-- Starting prize, per-fail increment, bounty count and reset-on-win are all configurable on the setup screen
+Every bounty starts at **$10**. Nothing else changes its price — only a failed attempt.
 
-### Host notes
-- Anyone with the `/solo/<id>` link can view and drive the run — open it on both the contestant's and the host's machine
-- **Host Controls** (bottom of the page) has undo-last-result, manual pot/banked overrides, pool refreshes and restart
-- `GET /api/solo/<id>` returns the live run as JSON for an overlay or OBS browser source
+### Pages
+| URL | What it is |
+| --- | --- |
+| `/show` | Host control panel. Admin password login. |
+| `/show/overlay` | OBS browser source, 1920x1080 transparent — active bounty card + the claimed/failed animations. `?side=left` to flip it, `?scale=0.8` to resize. |
+| `/show/board` | OBS browser source, 1920x1080 — the full board with values and claimer names. `?bg=1` for a solid backdrop. |
+
+### Stream Deck / streamer.bot
+Every action answers to both GET and POST so a Stream Deck button can fire it directly. The
+control panel prints ready-made URLs with the key already in them.
+
+```
+/api/show/claim?key=KEY          bounty claimed
+/api/show/fail?key=KEY           bounty failed (stamp until game end)
+/api/show/game-won?key=KEY       1v1 over, they won   (+$1 if unclaimed, +1 wheel spot)
+/api/show/game-lost?key=KEY      1v1 over, they lost  (+$1 if unclaimed)
+/api/show/undo?key=KEY           undo the last action
+/api/show/select?key=KEY&player=NAME&bounty=ID
+/api/show/cancel?key=KEY         wipe the current attempt, no money changes
+```
+
+The key comes from `SHOW_API_KEY`; if that env var is unset one is generated on first boot and
+kept in Redis. Read-only endpoints need no key: `/api/show/state`, `/api/show/board`,
+`/api/show/leaderboard`.
+
+### Player database
+Every name that plays is tracked: attempts, bounties claimed, fails, 1v1 wins/losses, wheel
+spots and total dollars earned. `GET /api/show/leaderboard` returns the whole thing as JSON
+for the external leaderboard site to pull. Player history survives dealing a new board.
 
 ## Rules
 - 12 unique bounties at all times across both players (no overlap, none from used pool)

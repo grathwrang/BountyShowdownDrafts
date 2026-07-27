@@ -289,31 +289,11 @@ function addPoolSnapshot(player, label) {
   });
 }
 
-// ── SOLO (GAMESHOW) MODE ───────────────────────────────────────────
-// One contestant, one pool of bounties, one escalating prize pot.
-// The pot starts at $10 and climbs by $1 every time a bounty is failed.
-const SOLO_DEFAULTS = {
-  totalBounties: 6,   // bounties dealt = attempts in the run
-  startingPrize: 10,  // dollars on the first bounty
-  increment: 1,       // dollars added to the pot on every failure
-  resetOnWin: false,  // if true the pot drops back to startingPrize after a win
-};
-
-function freshSolo() {
-  return {
-    bounties: [],
-    selectedBounty: null,
-    lockedIn: false,
-    refreshesUsed: 0,
-    poolSnapshots: [],
-  };
-}
-
 function createSession(mode = 'normal') {
   const sessionId = uuidv4();
   const session = {
     id: sessionId,
-    mode: mode, // 'normal', 'grandfinals' or 'solo'
+    mode: mode, // 'normal' or 'grandfinals'
     refreshLimit: globalDefaultRefreshLimit,
     slots: { player1: null, player2: null, admin: null },
     playerNames: { player1: null, player2: null },
@@ -325,19 +305,6 @@ function createSession(mode = 'normal') {
     gameHistory: [],
     createdAt: Date.now(),
   };
-  if (mode === 'solo') {
-    // A show is six bounties, six games — rerolls are opt-in by the host.
-    session.refreshLimit = 0;
-    session.soloConfig = { ...SOLO_DEFAULTS };
-    session.solo = {
-      prize: SOLO_DEFAULTS.startingPrize,
-      banked: 0,
-      wins: 0,
-      failures: 0,
-      attempts: [],
-      player: freshSolo(),
-    };
-  }
   sessions[sessionId] = session;
   persistSession(session);
   return session;
@@ -427,132 +394,6 @@ function advanceGame(session) {
   emitState(session);
 }
 
-// ── SOLO ENGINE ────────────────────────────────────────────────────
-function sanitizeSoloConfig(input = {}, current = SOLO_DEFAULTS) {
-  const int = (v, fallback, min, max) => {
-    const n = parseInt(v, 10);
-    if (!Number.isFinite(n)) return fallback;
-    return Math.min(max, Math.max(min, n));
-  };
-  return {
-    totalBounties: int(input.totalBounties, current.totalBounties, 1, 12),
-    startingPrize: int(input.startingPrize, current.startingPrize, 0, 100000),
-    increment: int(input.increment, current.increment, 0, 10000),
-    resetOnWin: input.resetOnWin === undefined ? current.resetOnWin : !!input.resetOnWin,
-  };
-}
-
-function startSoloRun(session) {
-  const cfg = session.soloConfig;
-  const solo = session.solo;
-  session.gameNumber = 1;
-  session.status = 'bounty_phase';
-  session.usedBountyIds = new Set();
-  solo.prize = cfg.startingPrize;
-  solo.banked = 0;
-  solo.wins = 0;
-  solo.failures = 0;
-  solo.attempts = [];
-  solo.player = freshSolo();
-  solo.player.bounties = drawBounties(session.usedBountyIds, cfg.totalBounties);
-  addPoolSnapshot(solo.player, 'Initial Pool');
-  persistSession(session);
-  emitSoloState(session);
-}
-
-// Record the outcome of the bounty currently in play.
-// A failure grows the pot for the next bounty; a win banks it.
-function recordSoloResult(session, result) {
-  const cfg = session.soloConfig;
-  const solo = session.solo;
-  const p = solo.player;
-  if (session.status !== 'in_game' || !p.selectedBounty) return;
-
-  const attempt = {
-    game: session.gameNumber,
-    bounty: p.selectedBounty,
-    prize: solo.prize,          // what this bounty was worth
-    result,                     // 'win' | 'fail'
-    prizeBefore: solo.prize,    // kept so a mis-click can be undone
-    bankedBefore: solo.banked,
-  };
-
-  if (result === 'win') {
-    solo.wins++;
-    solo.banked += solo.prize;
-    if (cfg.resetOnWin) solo.prize = cfg.startingPrize;
-  } else {
-    solo.failures++;
-    solo.prize += cfg.increment;
-  }
-  attempt.prizeAfter = solo.prize;
-  attempt.bankedAfter = solo.banked;
-  solo.attempts.push(attempt);
-
-  session.usedBountyIds.add(attempt.bounty.id);
-  p.bounties = p.bounties.filter(b => b.id !== attempt.bounty.id);
-  p.selectedBounty = null;
-  p.lockedIn = false;
-
-  if (solo.attempts.length >= cfg.totalBounties || p.bounties.length === 0) {
-    session.status = 'done';
-  } else {
-    session.gameNumber++;
-    session.status = 'bounty_phase';
-  }
-  persistSession(session);
-  emitSoloState(session);
-}
-
-function undoSoloResult(session) {
-  const solo = session.solo;
-  const p = solo.player;
-  const last = solo.attempts.pop();
-  if (!last) return;
-  solo.prize = last.prizeBefore;
-  solo.banked = last.bankedBefore;
-  if (last.result === 'win') solo.wins = Math.max(0, solo.wins - 1);
-  else solo.failures = Math.max(0, solo.failures - 1);
-  session.usedBountyIds.delete(last.bounty.id);
-  if (!p.bounties.some(b => b.id === last.bounty.id)) p.bounties.push(last.bounty);
-  p.selectedBounty = null;
-  p.lockedIn = false;
-  session.gameNumber = last.game;
-  session.status = 'bounty_phase';
-  persistSession(session);
-  emitSoloState(session);
-}
-
-function soloPublicState(session) {
-  const solo = session.solo;
-  const cfg = session.soloConfig;
-  return {
-    sessionId: session.id,
-    mode: 'solo',
-    status: session.status,
-    gameNumber: session.gameNumber,
-    contestant: session.playerNames.player1,
-    config: cfg,
-    prize: solo.prize,
-    banked: solo.banked,
-    wins: solo.wins,
-    failures: solo.failures,
-    attempts: solo.attempts,
-    attemptsMade: solo.attempts.length,
-    attemptsTotal: cfg.totalBounties,
-    bounties: solo.player.bounties,
-    selectedBounty: solo.player.selectedBounty,
-    lockedIn: solo.player.lockedIn,
-    refreshesUsed: solo.player.refreshesUsed,
-    refreshLimit: session.refreshLimit,
-    remainingPool: BOUNTY_POOL.length - session.usedBountyIds.size,
-  };
-}
-
-function emitSoloState(session) {
-  io.to(session.id).emit('soloState', soloPublicState(session));
-}
-
 // ── STATE EMISSION ─────────────────────────────────────────────────
 function emitState(session) {
   const { slots, players: { player1: p1, player2: p2 } } = session;
@@ -612,16 +453,9 @@ const requireAdmin = (req, res, next) => {
 
 app.post('/api/session', (req, res) => {
   const requested = req.body?.mode;
-  const mode = ['grandfinals', 'solo'].includes(requested) ? requested : 'normal';
+  const mode = requested === 'grandfinals' ? 'grandfinals' : 'normal';
   const session = createSession(mode);
   res.json({ sessionId: session.id, mode: session.mode });
-});
-
-// Read-only solo state — handy as an OBS browser source or for a custom overlay.
-app.get('/api/solo/:id', (req, res) => {
-  const s = sessions[req.params.id];
-  if (!s || s.mode !== 'solo') return res.status(404).json({ error: 'Not found' });
-  res.json(soloPublicState(s));
 });
 
 app.get('/api/session/:id/slots', (req, res) => {
@@ -738,12 +572,23 @@ app.post('/api/admin/session/:id/refresh-limit', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── STREAM BOUNTY SHOW ─────────────────────────────────────────────
+// The persistent stream-long board (wheel → pick → 1v1 → claim/fail).
+const showModule = require('./show')({
+  app, io,
+  bountyPool: BOUNTY_POOL,
+  redisCmd,
+  requireAdmin,
+});
+showModule.setAdminTokenValidator(token => adminTokens.has(token));
+
 // Page routes
+app.get('/show', (req, res) => res.sendFile(path.join(__dirname, 'public', 'show.html')));
+app.get('/show/overlay', (req, res) => res.sendFile(path.join(__dirname, 'public', 'showoverlay.html')));
+app.get('/show/board', (req, res) => res.sendFile(path.join(__dirname, 'public', 'showboard.html')));
 app.get('/overlay/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'overlay.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/join/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/solo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'solo.html')));
-app.get('/solo/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'solo.html')));
 app.get('/grandfinals', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grandfinals.html')));
 app.get('/grandfinals/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'grandfinals.html')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -754,7 +599,6 @@ io.on('connection', (socket) => {
   socket.on('join', ({ sessionId, role, playerName, adminToken, manualElo }) => {
     const session = sessions[sessionId];
     if (!session) return socket.emit('err', { msg: 'Session not found.' });
-    if (session.mode === 'solo') return socket.emit('err', { msg: 'That is a solo session.', redirect: '/solo/' + sessionId });
     if (!['player1', 'player2', 'admin'].includes(role)) return socket.emit('err', { msg: 'Invalid role.' });
     if (role === 'admin' && (!adminToken || !adminTokens.has(adminToken))) {
       return socket.emit('err', { msg: 'Admin access requires login. Please visit /admin first.', redirect: '/admin' });
@@ -927,151 +771,6 @@ io.on('connection', (socket) => {
     else emitState(session);
   });
 
-  // ── SOLO SOCKET EVENTS ───────────────────────────────────────────
-  // A solo session has no slots to contest — the contestant and the host
-  // share one link, and any tab on that link can drive the run. Losing the
-  // page mid-show is a reconnect, not a lockout.
-  function soloSession(socket) {
-    const session = sessions[socket.data.sessionId];
-    if (!session || session.mode !== 'solo') return null;
-    return session;
-  }
-
-  socket.on('soloJoin', ({ sessionId }) => {
-    const session = sessions[sessionId];
-    if (!session) return socket.emit('err', { msg: 'Session not found.' });
-    if (session.mode !== 'solo') return socket.emit('err', { msg: 'That session is not a solo run.', redirect: '/join/' + sessionId });
-    socket.data.sessionId = sessionId;
-    socket.data.role = 'solo';
-    socket.join(sessionId);
-    socket.emit('soloJoined', { sessionId });
-    emitSoloState(session);
-  });
-
-  socket.on('soloStart', ({ contestantName, config }) => {
-    const session = soloSession(socket);
-    if (!session) return;
-    if (!contestantName?.trim()) return socket.emit('err', { msg: 'Contestant name is required.' });
-    session.playerNames.player1 = contestantName.trim();
-    if (config) session.soloConfig = sanitizeSoloConfig(config, session.soloConfig);
-    startSoloRun(session);
-  });
-
-  socket.on('soloSetConfig', ({ config }) => {
-    const session = soloSession(socket);
-    if (!session || !config) return;
-    session.soloConfig = sanitizeSoloConfig(config, session.soloConfig);
-    // Before the first bounty is dealt the pot simply follows the configured start.
-    if (session.status === 'waiting') session.solo.prize = session.soloConfig.startingPrize;
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloSetRefreshLimit', ({ limit }) => {
-    const session = soloSession(socket);
-    if (!session) return;
-    session.refreshLimit = Math.max(0, parseInt(limit) || 0);
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloSelect', ({ bountyId }) => {
-    const session = soloSession(socket);
-    if (!session || session.status !== 'bounty_phase') return;
-    const p = session.solo.player;
-    if (p.lockedIn) return;
-    const bounty = p.bounties.find(b => b.id === bountyId);
-    if (!bounty) return;
-    p.selectedBounty = bounty;
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloLockIn', () => {
-    const session = soloSession(socket);
-    if (!session || session.status !== 'bounty_phase') return;
-    const p = session.solo.player;
-    if (!p.selectedBounty || p.lockedIn) return;
-    p.lockedIn = true;
-    const snapshots = p.poolSnapshots;
-    if (snapshots.length > 0) {
-      const last = snapshots[snapshots.length - 1];
-      last.lockedPool = last.pool.map(b => ({ ...b, isPick: b.id === p.selectedBounty.id }));
-    }
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloUnlock', () => {
-    const session = soloSession(socket);
-    if (!session || session.status !== 'bounty_phase') return;
-    session.solo.player.lockedIn = false;
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloBegin', () => {
-    const session = soloSession(socket);
-    if (!session || session.status !== 'bounty_phase') return;
-    const p = session.solo.player;
-    if (!p.lockedIn || !p.selectedBounty) return;
-    session.status = 'in_game';
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloResult', ({ result }) => {
-    const session = soloSession(socket);
-    if (!session) return;
-    if (!['win', 'fail'].includes(result)) return;
-    recordSoloResult(session, result);
-  });
-
-  socket.on('soloUndo', () => {
-    const session = soloSession(socket);
-    if (!session) return;
-    undoSoloResult(session);
-  });
-
-  socket.on('soloAdjustPrize', ({ prize, banked }) => {
-    const session = soloSession(socket);
-    if (!session) return;
-    const nextPrize = parseInt(prize, 10);
-    const nextBanked = parseInt(banked, 10);
-    if (Number.isFinite(nextPrize)) session.solo.prize = Math.max(0, nextPrize);
-    if (Number.isFinite(nextBanked)) session.solo.banked = Math.max(0, nextBanked);
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloRefresh', () => {
-    const session = soloSession(socket);
-    if (!session || session.status !== 'bounty_phase') return;
-    const p = session.solo.player;
-    if (p.lockedIn) return;
-    if (p.refreshesUsed >= session.refreshLimit) return socket.emit('err', { msg: 'No refreshes remaining.' });
-    const fresh = drawBounties(session.usedBountyIds, p.bounties.length);
-    if (fresh.length < p.bounties.length) return socket.emit('err', { msg: 'Not enough bounties remaining to refresh.' });
-    p.bounties = fresh;
-    p.selectedBounty = null;
-    p.refreshesUsed++;
-    addPoolSnapshot(p, `After Refresh ${p.refreshesUsed}`);
-    persistSession(session);
-    emitSoloState(session);
-  });
-
-  socket.on('soloReset', () => {
-    const session = soloSession(socket);
-    if (!session) return;
-    if (!session.playerNames.player1) {
-      session.status = 'waiting';
-      session.gameNumber = 0;
-      persistSession(session);
-      return emitSoloState(session);
-    }
-    startSoloRun(session);
-  });
-
   socket.on('disconnect', () => {
     const { sessionId, role } = socket.data || {};
     if (!sessionId || !sessions[sessionId]) return;
@@ -1085,6 +784,6 @@ io.on('connection', (socket) => {
 
 // ── START ──────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-loadFromRedis().then(() => {
+Promise.all([loadFromRedis(), showModule.load()]).then(() => {
   server.listen(PORT, () => console.log(`Bounty server running on http://localhost:${PORT}`));
 });
