@@ -33,6 +33,27 @@ off the board, they queue a ranked 1v1, and you call the result with three butto
 
 Every bounty starts at **$10**. Nothing else changes its price — only a failed attempt.
 
+### Board setup (control panel)
+The **Board Setup** panel under the board handles both the size of the board and
+hand-written bounties.
+
+**How many bounties** — type a number (1–40) or hit one of the presets and click
+**Apply**. The board resizes live, no re-deal: growing draws fresh bounties from the
+pool, shrinking drops the newest open tiles. Claimed tiles and whatever is in play
+are never touched, so a mid-stream resize can't wipe someone's payout. Each tile
+also gets an **✕** on hover to pull just that one off the board.
+
+**Add a bounty by hand** — title, description, level and (optionally) a starting
+value other than $10. Two ways to add it:
+- **Add & Put on Board** — goes straight onto the board and grows it by one.
+- **Add to Pool Only** — stocked for later; rerolls, resizes and new boards can draw it.
+
+Hand-typed bounties are saved separately from the board, so they survive restarts
+and dealing a new board. They're tagged **MINE** in the pool list, where they can be
+edited or deleted — editing one that's already on the board updates the tile too.
+The pool list also puts any of the 99 stock bounties straight onto the board with
+**+ Board**.
+
 ### Pages
 | URL | What it is |
 | --- | --- |
@@ -52,6 +73,18 @@ control panel prints ready-made URLs with the key already in them.
 /api/show/undo?key=KEY           undo the last action
 /api/show/select?key=KEY&player=NAME&bounty=ID
 /api/show/cancel?key=KEY         wipe the current attempt, no money changes
+```
+
+Board setup answers to the same key:
+
+```
+/api/show/board-size?key=KEY&size=N            resize the live board (1–40)
+/api/show/add-bounty?key=KEY&title=T&description=D&level=1|2|3[&toBoard=1][&value=N]
+/api/show/update-bounty?key=KEY&bounty=ID&title=T&description=D&level=N
+/api/show/delete-bounty?key=KEY&bounty=ID      hand-typed bounties only
+/api/show/add-tile?key=KEY&bounty=ID[&value=N] put a pool bounty on the board
+/api/show/remove-tile?key=KEY&bounty=ID        take a tile off the board
+/api/show/pool?key=KEY                         the whole pool + what's on the board
 ```
 
 The key comes from `SHOW_API_KEY`; if that env var is unset one is generated on first boot and

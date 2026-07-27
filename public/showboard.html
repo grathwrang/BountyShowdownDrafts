@@ -19,10 +19,11 @@ h1 { font-family:'WildBreathZelda','Cinzel',serif; font-size:3.3rem; color:#e8c9
 .totals { display:flex; gap:30px; font-family:'Cinzel',serif; font-size:0.86rem; letter-spacing:0.16em; text-transform:uppercase; color:#8a7e5a; }
 .totals strong { color:#c9a84c; font-size:1.5rem; display:block; margin-top:3px; letter-spacing:0.04em; }
 
-.grid { flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:1fr; gap:18px; }
+/* Columns and text size are set from the tile count — see fitGrid(). */
+.grid { flex:1; display:grid; grid-template-columns:repeat(var(--cols,4),1fr); grid-auto-rows:1fr; gap:var(--gap,18px); font-size:var(--tile-scale,1rem); }
 
 .tile {
-  position:relative; border-radius:14px; padding:34px 18px 16px;
+  position:relative; border-radius:14px; padding:2.1em 1.1em 1em;
   border:1px solid rgba(92,61,28,0.35);
   background-color:#e9ddb7;
   background-image:
@@ -34,18 +35,19 @@ h1 { font-family:'WildBreathZelda','Cinzel',serif; font-size:3.3rem; color:#e8c9
   display:flex; flex-direction:column; overflow:hidden;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
-.tile .value { position:absolute; top:10px; right:14px; font-family:'WildBreathZelda','Cinzel',serif; font-size:1.9rem; color:#7a4a00; line-height:1; }
-.tile .level { position:absolute; top:12px; left:14px; font-family:'Cinzel',serif; font-size:0.62rem; letter-spacing:0.14em; text-transform:uppercase; opacity:0.62; }
-.tile .t { font-family:'WildBreathZelda','Cinzel',serif; font-size:1.4rem; line-height:1.18; margin-bottom:6px; }
-.tile .d { font-size:0.9rem; line-height:1.34; opacity:0.9; flex:1; overflow:hidden; }
+/* top/left are in the element's own em, so they're scaled against its font-size */
+.tile .value { position:absolute; top:0.33em; right:0.46em; font-family:'WildBreathZelda','Cinzel',serif; font-size:1.9em; color:#7a4a00; line-height:1; }
+.tile .level { position:absolute; top:1.2em; left:1.4em; font-family:'Cinzel',serif; font-size:0.62em; letter-spacing:0.14em; text-transform:uppercase; opacity:0.62; }
+.tile .t { font-family:'WildBreathZelda','Cinzel',serif; font-size:1.4em; line-height:1.18; margin-bottom:0.3em; }
+.tile .d { font-size:0.9em; line-height:1.34; opacity:0.9; flex:1; overflow:hidden; }
 
 /* In play right now — glows and lifts */
 .tile.inplay { box-shadow:0 0 0 3px #c9a84c, 0 0 46px rgba(201,168,76,0.7), 0 10px 26px rgba(0,0,0,0.45); transform:translateY(-4px); }
 .tile.inplay::after {
   content:attr(data-player); position:absolute; left:0; right:0; bottom:0;
   background:linear-gradient(180deg, rgba(201,168,76,0.9), rgba(138,106,31,0.95));
-  color:#241f10; font-family:'Cinzel',serif; font-size:0.82rem; letter-spacing:0.14em; text-transform:uppercase;
-  padding:6px 10px; text-align:center;
+  color:#241f10; font-family:'Cinzel',serif; font-size:0.82em; letter-spacing:0.14em; text-transform:uppercase;
+  padding:0.45em 0.7em; text-align:center;
 }
 
 /* Claimed — name banner across the tile for the rest of the stream */
@@ -59,17 +61,17 @@ h1 { font-family:'WildBreathZelda','Cinzel',serif; font-size:3.3rem; color:#e8c9
   color:#cdf0cd; text-align:center; padding:9px 6px;
   box-shadow:0 8px 24px rgba(0,0,0,0.45);
 }
-.claimed-banner .lbl { font-family:'Cinzel',serif; font-size:0.56rem; letter-spacing:0.28em; text-transform:uppercase; opacity:0.8; }
-.claimed-banner .nm { font-family:'WildBreathZelda','Cinzel',serif; font-size:1.5rem; line-height:1.15; margin-top:2px; word-break:break-word; }
-.claimed-banner .amt { font-family:'Cinzel',serif; font-size:0.78rem; color:#ffe9a8; letter-spacing:0.1em; margin-top:2px; }
+.claimed-banner .lbl { font-family:'Cinzel',serif; font-size:0.56em; letter-spacing:0.28em; text-transform:uppercase; opacity:0.8; }
+.claimed-banner .nm { font-family:'WildBreathZelda','Cinzel',serif; font-size:1.5em; line-height:1.15; margin-top:2px; word-break:break-word; }
+.claimed-banner .amt { font-family:'Cinzel',serif; font-size:0.78em; color:#ffe9a8; letter-spacing:0.1em; margin-top:2px; }
 
 /* Failed stamp while a game is live on this tile */
 .tile.failed-now::before {
   content:'FAILED'; position:absolute; top:50%; left:50%;
   transform:translate(-50%,-50%) rotate(-13deg);
   border:4px solid #b81c1c; color:#b81c1c; opacity:0.9;
-  font-family:'Cinzel',serif; font-weight:900; font-size:1.7rem; letter-spacing:0.12em;
-  padding:5px 18px; border-radius:6px; background:rgba(255,235,235,0.3); z-index:2;
+  font-family:'Cinzel',serif; font-weight:900; font-size:1.7em; letter-spacing:0.12em;
+  padding:0.15em 0.6em; border-radius:6px; background:rgba(255,235,235,0.3); z-index:2;
 }
 </style>
 </head>
@@ -98,8 +100,32 @@ const money = n => '$' + Number(n || 0).toLocaleString();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LEVELS = { 1: 'Level I', 2: 'Level II', 3: 'Level III' };
 
+// The board can hold anywhere from 1 to 40 bounties, so the grid picks its
+// own column count: the one that gets tiles closest to a 1.35 aspect while
+// leaving as few empty slots in the last row as possible. Text scales with
+// the tile count so a 24-bounty board still reads on stream.
+const GRID_W = 1808, GRID_H = 950, IDEAL_RATIO = 1.35;
+
+function fitGrid(n) {
+  if (!n) return;
+  let cols = 4, best = Infinity;
+  for (let c = 1; c <= 8; c++) {
+    const rows = Math.ceil(n / c);
+    const ratio = (GRID_W / c) / (GRID_H / rows);
+    const empty = c * rows - n;
+    const score = Math.abs(ratio - IDEAL_RATIO) + (empty > 0 ? 0.35 + 0.08 * empty : 0);
+    if (score < best) { best = score; cols = c; }
+  }
+  const scale = Math.max(0.55, Math.min(1.3, Math.sqrt(12 / n)));
+  const grid = document.getElementById('grid').style;
+  grid.setProperty('--cols', cols);
+  grid.setProperty('--tile-scale', (scale * 16).toFixed(2) + 'px');
+  grid.setProperty('--gap', Math.round(18 * scale) + 'px');
+}
+
 socket.on('show:state', s => {
   const a = s.active;
+  fitGrid(s.board.length);
   document.getElementById('totals').innerHTML = `
     <div>Claimed<strong>${s.claimedCount}</strong></div>
     <div>Paid Out<strong>${money(s.totals.paidOut)}</strong></div>
