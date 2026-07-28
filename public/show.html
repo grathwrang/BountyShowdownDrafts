@@ -61,7 +61,7 @@ body { background:var(--bg-dark); color:var(--text); font-family:'Crimson Text',
 .btn-sm.danger:hover { border-color:#c0392b; color:#c0392b; }
 
 /* BOARD */
-.board-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+.board-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(178px,1fr)); gap:9px; }
 .tile { background:var(--bg-card); border:1px solid var(--border); padding:11px 10px 10px; cursor:pointer; transition:all 0.15s; position:relative; min-height:104px; display:flex; flex-direction:column; }
 .tile:hover:not(.claimed) { border-color:var(--gold); background:rgba(201,168,76,0.07); transform:translateY(-1px); }
 .tile.claimed { opacity:0.62; cursor:not-allowed; border-style:dashed; }
@@ -73,9 +73,38 @@ body { background:var(--bg-dark); color:var(--text); font-family:'Crimson Text',
 .tile-desc { font-size:0.74rem; color:var(--text-dim); line-height:1.35; flex:1; overflow:hidden; }
 .tile-claimed-by { margin-top:6px; font-family:'Cinzel',serif; font-size:0.66rem; color:#80c080; letter-spacing:0.06em; border-top:1px solid var(--border); padding-top:5px; }
 .tile-fails { position:absolute; bottom:6px; right:8px; font-size:0.64rem; color:var(--text-dim); }
-.tile-reroll { position:absolute; top:4px; right:4px; background:rgba(13,12,10,0.85); border:1px solid var(--border); color:var(--text-dim); font-size:0.62rem; padding:1px 5px; cursor:pointer; opacity:0; transition:opacity 0.15s; }
-.tile:hover .tile-reroll { opacity:1; }
+.tile-tools { position:absolute; top:4px; right:4px; display:flex; gap:3px; opacity:0; transition:opacity 0.15s; }
+.tile:hover .tile-tools { opacity:1; }
+.tile-reroll { background:rgba(13,12,10,0.85); border:1px solid var(--border); color:var(--text-dim); font-size:0.62rem; padding:1px 5px; cursor:pointer; }
 .tile-reroll:hover { border-color:var(--gold); color:var(--gold); }
+.tile-reroll.danger:hover { border-color:#c0392b; color:#c0392b; }
+
+/* BOARD SETUP */
+.setup-cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+.field { margin-bottom:9px; }
+.field label { display:block; font-family:'Cinzel',serif; font-size:0.6rem; color:var(--text-dim); letter-spacing:0.14em; text-transform:uppercase; margin-bottom:4px; }
+.field input, .field textarea, .field select {
+  width:100%; background:var(--bg-dark); border:1px solid var(--border); color:var(--text-bright);
+  padding:8px 10px; font-family:'Crimson Text',serif; font-size:0.94rem; outline:none; resize:vertical;
+}
+.field input:focus, .field textarea:focus, .field select:focus { border-color:var(--gold-dark); }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.size-row { display:flex; gap:8px; align-items:center; }
+.size-row input { width:90px; text-align:center; font-family:'Cinzel',serif; font-size:1.1rem; }
+.size-steps { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; }
+.size-steps .btn-sm.on { border-color:var(--gold); color:var(--gold); }
+
+.pool-list { max-height:260px; overflow-y:auto; border:1px solid var(--border); background:var(--bg-dark); }
+.pool-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid var(--border); font-size:0.85rem; }
+.pool-row:last-child { border-bottom:none; }
+.pool-row.on-board { opacity:0.45; }
+.pool-name { flex:1; color:var(--text-bright); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pool-lvl { font-family:'Cinzel',serif; font-size:0.56rem; color:var(--text-dim); border:1px solid var(--border-gold); padding:1px 4px; flex-shrink:0; }
+.tag-custom { font-family:'Cinzel',serif; font-size:0.52rem; color:var(--gold); border:1px solid var(--gold-dark); padding:1px 4px; letter-spacing:0.1em; flex-shrink:0; }
+.pool-btn { background:transparent; border:1px solid var(--border); color:var(--text-dim); font-size:0.68rem; padding:2px 7px; cursor:pointer; flex-shrink:0; }
+.pool-btn:hover { border-color:var(--gold); color:var(--gold); }
+.pool-btn.danger:hover { border-color:#c0392b; color:#c0392b; }
+.pool-btn:disabled { opacity:0.35; cursor:not-allowed; }
 
 /* SIDEBAR */
 .player-input { width:100%; background:var(--bg-dark); border:1px solid var(--border-gold); color:var(--text-bright); padding:11px 13px; font-family:'Cinzel',serif; font-size:1rem; outline:none; letter-spacing:0.06em; }
@@ -103,8 +132,8 @@ code.url { display:block; background:var(--bg-dark); border:1px solid var(--bord
 .toast.bad { border-color:#7a2a2a; color:#f0b8b8; }
 .hidden { display:none !important; }
 
-@media(max-width:1100px){ .cols { grid-template-columns:1fr; } .board-grid { grid-template-columns:repeat(3,1fr); } }
-@media(max-width:700px){ .board-grid { grid-template-columns:repeat(2,1fr); } .actions { grid-template-columns:1fr; } }
+@media(max-width:1100px){ .cols { grid-template-columns:1fr; } }
+@media(max-width:700px){ .board-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); } .actions { grid-template-columns:1fr; } .setup-cols { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -163,6 +192,77 @@ code.url { display:block; background:var(--bg-dark); border:1px solid var(--bord
       <div class="panel">
         <div class="panel-title">The Board <span id="board-summary" style="color:var(--text-dim);letter-spacing:0.06em;text-transform:none;font-size:0.72rem;"></span></div>
         <div class="board-grid" id="board"></div>
+      </div>
+
+      <!-- BOARD SETUP -->
+      <div class="panel">
+        <div class="panel-title">Board Setup</div>
+        <div class="setup-cols">
+
+          <!-- SIZE + NEW BOUNTY -->
+          <div>
+            <div class="field">
+              <label>How many bounties on the board</label>
+              <div class="size-row">
+                <button class="btn-sm" onclick="nudgeSize(-1)">−</button>
+                <input type="number" id="board-size" min="1" max="40" value="12" onkeydown="if(event.key==='Enter')applySize()" />
+                <button class="btn-sm" onclick="nudgeSize(1)">+</button>
+                <button class="btn-sm" onclick="applySize()" style="border-color:var(--gold-dark);color:var(--gold);">Apply</button>
+              </div>
+              <div class="size-steps" id="size-presets"></div>
+              <div class="hint">Growing draws fresh bounties, shrinking drops the newest open tiles. Claimed tiles and whatever is in play stay put.</div>
+            </div>
+
+            <div class="panel-title" style="margin-top:18px;" id="entry-title">Add a Bounty by Hand</div>
+            <div class="field">
+              <label>Title</label>
+              <input id="nb-title" maxlength="120" placeholder="e.g. Full Mangonel Line" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('nb-desc').focus()" />
+            </div>
+            <div class="field">
+              <label>Description</label>
+              <textarea id="nb-desc" rows="3" maxlength="400" placeholder="What exactly do they have to do to claim it?"></textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Level</label>
+                <select id="nb-level">
+                  <option value="1">Level I — easy</option>
+                  <option value="2" selected>Level II — medium</option>
+                  <option value="3">Level III — hard</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Starting value ($)</label>
+                <input type="number" id="nb-value" min="0" placeholder="10" />
+              </div>
+            </div>
+            <div class="subactions" id="entry-buttons">
+              <button class="btn-sm" style="border-color:var(--gold-dark);color:var(--gold);" onclick="addBounty(true)">Add & Put on Board</button>
+              <button class="btn-sm" onclick="addBounty(false)">Add to Pool Only</button>
+            </div>
+            <div class="subactions hidden" id="edit-buttons">
+              <button class="btn-sm" style="border-color:var(--gold-dark);color:var(--gold);" onclick="saveEdit()">Save Changes</button>
+              <button class="btn-sm" onclick="cancelEdit()">Cancel</button>
+            </div>
+            <div class="hint">Hand-typed bounties join the draw pool, so rerolls and new boards can pull them too. They survive restarts.</div>
+          </div>
+
+          <!-- POOL -->
+          <div>
+            <div class="field">
+              <label>Bounty pool <span id="pool-count" style="letter-spacing:0;text-transform:none;"></span></label>
+              <input id="pool-search" placeholder="Search the pool…" autocomplete="off" oninput="renderPool()" />
+            </div>
+            <div class="subactions" style="margin-top:0;margin-bottom:8px;">
+              <button class="btn-sm" id="filter-all" onclick="setPoolFilter('all')">All</button>
+              <button class="btn-sm" id="filter-custom" onclick="setPoolFilter('custom')">Hand-typed</button>
+              <button class="btn-sm" id="filter-off" onclick="setPoolFilter('off')">Not on Board</button>
+            </div>
+            <div class="pool-list" id="pool-list"></div>
+            <div class="hint">“+ Board” puts a bounty straight onto the board and grows it by one.</div>
+          </div>
+
+        </div>
       </div>
     </div>
 
@@ -244,6 +344,8 @@ async function enterPanel() {
   el('login').classList.add('hidden');
   el('panel').classList.remove('hidden');
   renderDeckUrls();
+  setPoolFilter('all');
+  loadPool();
   if (STATE) render(STATE);
 }
 
@@ -276,9 +378,151 @@ function reroll(id, title, ev) {
   if (confirm(`Swap "${title}" off the board for a fresh bounty?`)) call('reroll', { bounty: id });
 }
 
+async function removeTile(id, title, ev) {
+  ev.stopPropagation();
+  if (!confirm(`Take "${title}" off the board? The board shrinks by one.`)) return;
+  const d = await call('remove-tile', { bounty: id });
+  if (d.ok) { toast(`Removed ${d.bounty}`); loadPool(); }
+}
+
 function newBoard() {
   if (!confirm('Deal a brand new board? Claims on the current board are cleared. Player stats are kept.')) return;
-  call('new-board');
+  call('new-board', { boardSize: el('board-size').value || undefined });
+}
+
+// ── BOARD SIZE ────────────────────────────────────────────────────
+function nudgeSize(delta) {
+  const input = el('board-size');
+  const next = (parseInt(input.value, 10) || (STATE ? STATE.board.length : 12)) + delta;
+  input.value = Math.max(+input.min, Math.min(+input.max, next));
+}
+
+async function applySize() {
+  const size = parseInt(el('board-size').value, 10);
+  if (!Number.isFinite(size)) { toast('Enter a number of bounties', true); return; }
+  const d = await call('board-size', { size });
+  if (d.ok) { toast(d.message || `Board is now ${d.boardSize} bounties`); loadPool(); }
+}
+
+function renderSizePresets(current) {
+  el('size-presets').innerHTML = [6, 9, 12, 15, 16, 20, 24].map(n =>
+    `<button class="btn-sm ${n === current ? 'on' : ''}" onclick="el('board-size').value=${n};applySize()">${n}</button>`
+  ).join('');
+}
+
+// ── MANUAL BOUNTY ENTRY ───────────────────────────────────────────
+let POOL = [];
+let POOL_FILTER = 'all';
+let EDITING = null;
+
+function entryFields() {
+  return {
+    title: el('nb-title').value.trim(),
+    description: el('nb-desc').value.trim(),
+    level: el('nb-level').value,
+  };
+}
+
+function clearEntry() {
+  el('nb-title').value = '';
+  el('nb-desc').value = '';
+  el('nb-level').value = '2';
+  el('nb-value').value = '';
+}
+
+async function addBounty(toBoard) {
+  const f = entryFields();
+  if (!f.title) { toast('Give the bounty a title', true); el('nb-title').focus(); return; }
+  const value = el('nb-value').value.trim();
+  const d = await call('add-bounty', { ...f, ...(value ? { value } : {}), ...(toBoard ? { toBoard: '1' } : {}) });
+  if (!d.ok) return;
+  toast(d.warning ? `Added to the pool — ${d.warning}` : (toBoard ? `"${d.bounty.title}" is on the board` : `"${d.bounty.title}" added to the pool`), !!d.warning);
+  clearEntry();
+  el('nb-title').focus();
+  loadPool();
+}
+
+function startEdit(id) {
+  const b = POOL.find(x => String(x.id) === String(id));
+  if (!b) return;
+  EDITING = b.id;
+  el('nb-title').value = b.title;
+  el('nb-desc').value = b.description || '';
+  el('nb-level').value = String(b.level);
+  el('entry-title').textContent = 'Editing: ' + b.title;
+  el('entry-buttons').classList.add('hidden');
+  el('edit-buttons').classList.remove('hidden');
+  el('nb-title').focus();
+}
+
+function cancelEdit() {
+  EDITING = null;
+  clearEntry();
+  el('entry-title').textContent = 'Add a Bounty by Hand';
+  el('entry-buttons').classList.remove('hidden');
+  el('edit-buttons').classList.add('hidden');
+}
+
+async function saveEdit() {
+  const f = entryFields();
+  if (!f.title) { toast('Give the bounty a title', true); return; }
+  const d = await call('update-bounty', { bounty: EDITING, ...f });
+  if (!d.ok) return;
+  toast(d.onBoard ? 'Saved — the board tile updated too' : 'Saved');
+  cancelEdit();
+  loadPool();
+}
+
+async function deleteBounty(id, title) {
+  if (!confirm(`Delete "${title}" from the pool for good?`)) return;
+  const d = await call('delete-bounty', { bounty: id });
+  if (d.ok) { toast(`Deleted ${d.bounty}`); if (String(EDITING) === String(id)) cancelEdit(); loadPool(); }
+}
+
+async function addTile(id) {
+  const d = await call('add-tile', { bounty: id });
+  if (d.ok) { toast(`"${d.bounty}" is on the board (${d.boardSize} bounties)`); loadPool(); }
+}
+
+// ── POOL ──────────────────────────────────────────────────────────
+async function loadPool() {
+  const d = await call('pool');
+  if (!d.ok) return;
+  POOL = d.pool;
+  const input = el('board-size');
+  input.min = d.limits.min; input.max = d.limits.max;
+  if (document.activeElement !== input) input.value = d.boardSize;
+  renderSizePresets(d.boardSize);
+  renderPool();
+}
+
+function setPoolFilter(f) {
+  POOL_FILTER = f;
+  ['all', 'custom', 'off'].forEach(k => el('filter-' + k).classList.toggle('on', k === f));
+  renderPool();
+}
+
+function renderPool() {
+  const q = el('pool-search').value.trim().toLowerCase();
+  const rows = POOL.filter(b => {
+    if (POOL_FILTER === 'custom' && !b.custom) return false;
+    if (POOL_FILTER === 'off' && b.onBoard) return false;
+    if (!q) return true;
+    return (b.title + ' ' + (b.description || '')).toLowerCase().includes(q);
+  });
+
+  el('pool-count').textContent = `· ${rows.length} of ${POOL.length} · ${POOL.filter(b => b.custom).length} hand-typed`;
+  el('pool-list').innerHTML = rows.length
+    ? rows.slice(0, 300).map(b => `
+        <div class="pool-row ${b.onBoard ? 'on-board' : ''}">
+          <span class="pool-lvl">L${b.level}</span>
+          ${b.custom ? '<span class="tag-custom">MINE</span>' : ''}
+          <span class="pool-name" title="${esc(b.description || b.title)}">${esc(b.title)}</span>
+          <button class="pool-btn" onclick="addTile('${esc(b.id)}')" ${b.onBoard ? 'disabled' : ''}>${b.onBoard ? 'on board' : '+ Board'}</button>
+          ${b.custom ? `<button class="pool-btn" onclick="startEdit('${esc(b.id)}')">Edit</button>
+          <button class="pool-btn danger" onclick="deleteBounty('${esc(b.id)}', '${esc(b.title).replace(/'/g, "\\'")}')">✕</button>` : ''}
+        </div>`).join('')
+    : '<div class="hint" style="padding:10px;">Nothing matches.</div>';
 }
 
 // ── RENDER ────────────────────────────────────────────────────────
@@ -315,7 +559,10 @@ function render(s) {
     return `
       <div class="tile ${t.status === 'claimed' ? 'claimed' : ''} ${isPlay ? 'inplay-tile' : ''}"
            ${t.status === 'open' ? `onclick="selectTile('${t.id}')"` : ''}>
-        ${t.status === 'open' && !isPlay ? `<button class="tile-reroll" onclick="reroll('${t.id}','${esc(t.title).replace(/'/g, "\\'")}',event)">⟳</button>` : ''}
+        ${t.status === 'open' && !isPlay ? `<div class="tile-tools">
+          <button class="tile-reroll" title="Swap for a fresh bounty" onclick="reroll('${t.id}','${esc(t.title).replace(/'/g, "\\'")}',event)">⟳</button>
+          <button class="tile-reroll danger" title="Take off the board" onclick="removeTile('${t.id}','${esc(t.title).replace(/'/g, "\\'")}',event)">✕</button>
+        </div>` : ''}
         <div class="tile-top">
           <div class="tile-value">${money(t.value)}</div>
           <div class="tile-level">L${t.level}</div>
@@ -326,6 +573,21 @@ function render(s) {
         ${t.fails && !t.claimedBy ? `<div class="tile-fails">${t.fails} fail${t.fails > 1 ? 's' : ''}</div>` : ''}
       </div>`;
   }).join('');
+
+  // Keep the size box and the pool's "on board" flags honest when the board
+  // changes from somewhere else (another tab, a Stream Deck button).
+  const sizeInput = el('board-size');
+  if (document.activeElement !== sizeInput) sizeInput.value = s.board.length;
+  renderSizePresets(s.board.length);
+  if (POOL.length) {
+    const onBoard = new Set(s.board.map(t => String(t.id)));
+    let changed = false;
+    POOL.forEach(b => {
+      const now = onBoard.has(String(b.id));
+      if (now !== b.onBoard) { b.onBoard = now; changed = true; }
+    });
+    if (changed) renderPool();   // don't nuke the list's scroll on every event
+  }
 
   // Totals
   el('totals').innerHTML = `
@@ -356,6 +618,11 @@ function render(s) {
         else if (l.type === 'fail') text = `<b>${esc(l.player)}</b> failed ${esc(l.bounty)}`;
         else if (l.type === 'game-end') text = `game over (${l.result}) — ${esc(l.bounty || '')} ${esc(l.message || '')}`;
         else if (l.type === 'reroll') text = `rerolled ${esc(l.bounty)} ${esc(l.message || '')}`;
+        else if (l.type === 'add-tile') text = `put <b>${esc(l.bounty)}</b> on the board (${money(l.value)})`;
+        else if (l.type === 'remove-tile') text = `took <b>${esc(l.bounty)}</b> off the board`;
+        else if (l.type === 'bounty-added') text = `new bounty <b>${esc(l.bounty)}</b> ${esc(l.message || '')}`;
+        else if (l.type === 'bounty-edited') text = `edited <b>${esc(l.bounty)}</b>`;
+        else if (l.type === 'bounty-deleted') text = `deleted <b>${esc(l.bounty)}</b> ${esc(l.message || '')}`;
         else text = esc(l.message || l.type);
         return `<div class="log-line ${cls}"><span class="log-time">${time}</span><span>${text}</span></div>`;
       }).join('')

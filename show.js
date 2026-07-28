@@ -24,6 +24,9 @@ const DEFAULTS = {
   increment: 1,       // a failed bounty gains $1 for the next challenger
 };
 
+const MIN_BOARD = 1;
+const MAX_BOARD = 40;
+
 const MAX_LOG = 300;
 const MAX_UNDO = 40;
 
@@ -37,6 +40,10 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
   // saved show comes back from Redis; load() then replaces it.
   let show = null;
   const undoStack = [];
+
+  // Bounties typed in by hand from the control panel. They live alongside
+  // bounties.json in the draw pool and survive restarts and new boards.
+  let customBounties = [];
 
   // Stream Deck buttons carry the key in the URL, so it has to be stable
   // across restarts — env var first, then whatever we persisted, then new.
@@ -73,10 +80,19 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
     };
   }
 
+  // Everything that can be drawn: the file-backed pool plus hand-typed ones.
+  function fullPool() {
+    return [...bountyPool, ...customBounties];
+  }
+
+  function poolBounty(id) {
+    return fullPool().find(b => String(b.id) === String(id)) || null;
+  }
+
   // Deal a board balanced across the three levels.
   function drawBoard(size, excludeIds = []) {
-    const exclude = new Set(excludeIds);
-    const available = bountyPool.filter(b => !exclude.has(b.id));
+    const exclude = new Set(excludeIds.map(String));
+    const available = fullPool().filter(b => !exclude.has(String(b.id)));
     const perLevel = Math.floor(size / 3);
     const byLevel = { 1: [], 2: [], 3: [] };
     available.forEach(b => { if (byLevel[b.level]) byLevel[b.level].push(b); });
@@ -87,9 +103,9 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
       picked.push(...shuffled.slice(0, perLevel));
     }
     if (picked.length < size) {
-      const pickedIds = new Set(picked.map(b => b.id));
+      const pickedIds = new Set(picked.map(b => String(b.id)));
       picked.push(...available
-        .filter(b => !pickedIds.has(b.id))
+        .filter(b => !pickedIds.has(String(b.id)))
         .sort(() => Math.random() - 0.5)
         .slice(0, size - picked.length));
     }
@@ -115,7 +131,24 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
     await redisCmd('SET', 'show:current', JSON.stringify(show));
   }
 
+  // Kept out of show:current on purpose — hand-typed bounties belong to the
+  // pool, not to a board, so dealing a new board never loses them.
+  async function persistPool() {
+    await redisCmd('SET', 'show:custom-bounties', JSON.stringify(customBounties));
+  }
+
   async function loadShow() {
+    try {
+      const rawPool = await redisCmd('GET', 'show:custom-bounties');
+      if (rawPool) {
+        const parsed = JSON.parse(rawPool);
+        if (Array.isArray(parsed)) customBounties = parsed;
+        console.log(`Restored ${customBounties.length} custom bounties`);
+      }
+    } catch (e) {
+      console.error('Error restoring custom bounties:', e.message);
+    }
+    let restored = false;
     try {
       const raw = await redisCmd('GET', 'show:current');
       if (raw) {
@@ -124,6 +157,7 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
         show.players = show.players || {};
         show.log = show.log || [];
         show.totals = show.totals || { claims: 0, paidOut: 0, attempts: 0 };
+        restored = true;
         console.log(`Restored bounty show: ${show.board.length} tiles, ${Object.keys(show.players).length} players`);
       }
       if (!showKey) {
@@ -132,7 +166,9 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
     } catch (e) {
       console.error('Error restoring show:', e.message);
     }
-    if (!show) show = freshShow();
+    // Nothing saved — re-deal now that the custom bounties are in the pool
+    // (the board seeded at mount time was drawn without them).
+    if (!restored) show = freshShow();
     if (!showKey) {
       showKey = crypto.randomBytes(16).toString('hex');
       await redisCmd('SET', 'show:key', showKey);
@@ -150,6 +186,7 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
         active: show.active,
         players: show.players,
         totals: show.totals,
+        config: show.config,
       }),
     });
     if (undoStack.length > MAX_UNDO) undoStack.shift();
@@ -163,6 +200,7 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
     show.active = prev.active;
     show.players = prev.players;
     show.totals = prev.totals;
+    if (prev.config) show.config = prev.config;
     show.log.unshift({ ts: Date.now(), type: 'undo', message: `Undid: ${entry.label}` });
     show.log = show.log.slice(0, MAX_LOG);
     show.event = null;
@@ -215,6 +253,7 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
     return {
       startedAt: show.startedAt,
       config: show.config,
+      limits: { minBoard: MIN_BOARD, maxBoard: MAX_BOARD },
       board: show.board,
       active: show.active ? { ...show.active, bounty: at || null } : null,
       totals: show.totals,
@@ -224,6 +263,23 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
       boardValue: show.board.filter(t => t.status === 'open').reduce((sum, t) => sum + t.value, 0),
       log: show.log.slice(0, 40),
       players: leaderboard(),
+    };
+  }
+
+  // Everything the control panel needs to stock the board by hand.
+  function poolView() {
+    const onBoard = new Set(show.board.map(t => String(t.id)));
+    return {
+      limits: { min: MIN_BOARD, max: MAX_BOARD },
+      boardSize: show.board.length,
+      pool: fullPool().map(b => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        level: b.level,
+        custom: !!b.custom,
+        onBoard: onBoard.has(String(b.id)),
+      })),
     };
   }
 
@@ -408,11 +464,170 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
     return { ok: true, bounty: t.title, value: next };
   }
 
+  // ── HAND-TYPED BOUNTIES ──────────────────────────────────────────
+  function cleanBountyFields({ title, description, level }) {
+    const t = String(title ?? '').trim();
+    if (!t) return { error: 'A title is required.' };
+    const lv = parseInt(level, 10);
+    return {
+      fields: {
+        title: t.slice(0, 120),
+        description: String(description ?? '').trim().slice(0, 400),
+        level: [1, 2, 3].includes(lv) ? lv : 2,
+      },
+    };
+  }
+
+  // `custom:` prefixed so a hand-typed bounty can never collide with an id
+  // from bounties.json, and so the panel can tell the two apart.
+  function nextCustomId() {
+    return 'custom:' + crypto.randomBytes(5).toString('hex');
+  }
+
+  function actionAddBounty(params = {}) {
+    const { error, fields } = cleanBountyFields(params);
+    if (error) return { ok: false, error };
+
+    const bounty = { id: nextCustomId(), ...fields, custom: true, createdAt: Date.now() };
+    customBounties.push(bounty);
+    persistPool();
+
+    // `toBoard` (any truthy string, since Stream Deck sends query strings)
+    // puts it straight into play instead of only stocking the pool.
+    const wantsBoard = params.toBoard !== undefined
+      && !['0', 'false', 'no', ''].includes(String(params.toBoard).toLowerCase());
+    if (wantsBoard) {
+      const placed = actionAddTile({ bounty: bounty.id, value: params.value });
+      if (!placed.ok) return { ok: true, bounty, board: false, warning: placed.error };
+      return { ok: true, bounty, board: true, boardSize: show.board.length };
+    }
+
+    logEvent({ type: 'bounty-added', bounty: bounty.title, message: 'added to the pool' });
+    commit();
+    return { ok: true, bounty, board: false };
+  }
+
+  function actionUpdateBounty(params = {}) {
+    const target = customBounties.find(b => String(b.id) === String(params.bounty));
+    if (!target) return { ok: false, error: 'Only hand-typed bounties can be edited.' };
+    const { error, fields } = cleanBountyFields({
+      title: params.title ?? target.title,
+      description: params.description ?? target.description,
+      level: params.level ?? target.level,
+    });
+    if (error) return { ok: false, error };
+
+    Object.assign(target, fields);
+    persistPool();
+
+    // Keep a tile already on the board in step with the pool entry.
+    const t = tile(target.id);
+    if (t) {
+      snapshot(`edit ${t.title}`);
+      Object.assign(t, fields);
+    }
+    logEvent({ type: 'bounty-edited', bounty: target.title });
+    commit();
+    return { ok: true, bounty: target, onBoard: !!t };
+  }
+
+  function actionDeleteBounty({ bounty: bountyId } = {}) {
+    const idx = customBounties.findIndex(b => String(b.id) === String(bountyId));
+    if (idx === -1) return { ok: false, error: 'Only hand-typed bounties can be deleted.' };
+    if (tile(bountyId)) {
+      return { ok: false, error: 'That bounty is on the board — take it off the board first.' };
+    }
+    const [removed] = customBounties.splice(idx, 1);
+    persistPool();
+    logEvent({ type: 'bounty-deleted', bounty: removed.title, message: 'removed from the pool' });
+    commit();
+    return { ok: true, bounty: removed.title };
+  }
+
+  // ── BOARD SHAPE ──────────────────────────────────────────────────
+  function actionAddTile({ bounty: bountyId, value } = {}) {
+    const b = poolBounty(bountyId);
+    if (!b) return { ok: false, error: 'No such bounty in the pool.' };
+    if (tile(b.id)) return { ok: false, error: 'That bounty is already on the board.' };
+    if (show.board.length >= MAX_BOARD) return { ok: false, error: `The board is full (${MAX_BOARD} tiles).` };
+
+    const parsed = parseInt(value, 10);
+    const startAt = Number.isFinite(parsed) && parsed >= 0 ? parsed : show.config.startingValue;
+
+    snapshot(`add ${b.title} to the board`);
+    show.board.push(makeTile(b, startAt));
+    show.config.boardSize = show.board.length;
+    logEvent({ type: 'add-tile', bounty: b.title, value: startAt });
+    commit();
+    return { ok: true, bounty: b.title, boardSize: show.board.length };
+  }
+
+  function actionRemoveTile({ bounty: bountyId } = {}) {
+    const t = tile(bountyId);
+    if (!t) return { ok: false, error: 'That bounty is not on the board.' };
+    if (t.status === 'claimed') return { ok: false, error: `Claimed by ${t.claimedBy} — leave it up.` };
+    if (show.active && String(show.active.bountyId) === String(t.id)) {
+      return { ok: false, error: 'That bounty is in play right now.' };
+    }
+    if (show.board.length <= MIN_BOARD) return { ok: false, error: 'The board needs at least one tile.' };
+
+    snapshot(`remove ${t.title} from the board`);
+    show.board = show.board.filter(x => String(x.id) !== String(t.id));
+    show.config.boardSize = show.board.length;
+    logEvent({ type: 'remove-tile', bounty: t.title });
+    commit();
+    return { ok: true, bounty: t.title, boardSize: show.board.length };
+  }
+
+  // Resize the live board without re-dealing it: growing draws fresh
+  // bounties, shrinking drops open tiles from the end. Claimed tiles and
+  // whatever is in play right now are never touched.
+  function actionSetBoardSize({ size } = {}) {
+    const target = parseInt(size, 10);
+    if (!Number.isFinite(target) || target < MIN_BOARD || target > MAX_BOARD) {
+      return { ok: false, error: `Board size must be between ${MIN_BOARD} and ${MAX_BOARD}.` };
+    }
+
+    const current = show.board.length;
+    if (target === current) {
+      show.config.boardSize = target;
+      commit();
+      return { ok: true, boardSize: current, message: 'Board already that size.' };
+    }
+
+    if (target > current) {
+      const fresh = drawBoard(target - current, show.board.map(t => t.id));
+      if (!fresh.length) return { ok: false, error: 'No unused bounties left in the pool.' };
+      snapshot(`board size ${current} → ${current + fresh.length}`);
+      show.board.push(...fresh.map(b => makeTile(b, show.config.startingValue)));
+    } else {
+      const protectedTile = t => t.status === 'claimed'
+        || (show.active && String(show.active.bountyId) === String(t.id));
+      const droppable = show.board.filter(t => !protectedTile(t));
+      if (!droppable.length) return { ok: false, error: 'Every remaining tile is claimed or in play.' };
+
+      // Newest tiles come off first — those are the ones just added.
+      const dropIds = new Set(droppable.slice(-(current - target)).map(t => String(t.id)));
+      snapshot(`board size ${current} → ${current - dropIds.size}`);
+      show.board = show.board.filter(t => !dropIds.has(String(t.id)));
+    }
+
+    const landed = show.board.length;
+    show.config.boardSize = landed;
+    logEvent({ type: 'board-size', message: `Board resized: ${current} → ${landed} tiles` });
+    commit();
+    return {
+      ok: true,
+      boardSize: landed,
+      ...(landed !== target ? { message: `Stopped at ${landed} — claimed or in-play tiles stay up.` } : {}),
+    };
+  }
+
   function actionNewBoard({ players: playersMode, boardSize, startingValue, increment } = {}) {
     snapshot('new board');
     const config = {
       ...show.config,
-      ...(boardSize ? { boardSize: Math.min(24, Math.max(3, parseInt(boardSize, 10) || DEFAULTS.boardSize)) } : {}),
+      ...(boardSize ? { boardSize: Math.min(MAX_BOARD, Math.max(MIN_BOARD, parseInt(boardSize, 10) || DEFAULTS.boardSize)) } : {}),
       ...(startingValue !== undefined ? { startingValue: Math.max(0, parseInt(startingValue, 10) || 0) } : {}),
       ...(increment !== undefined ? { increment: Math.max(0, parseInt(increment, 10) || 0) } : {}),
     };
@@ -471,6 +686,15 @@ module.exports = function mountShow({ app, io, bountyPool, redisCmd, requireAdmi
   action('reroll', actionReroll);
   action('set-value', actionSetValue);
   action('new-board', actionNewBoard);
+
+  // Pool + board shape
+  action('pool', () => ({ ok: true, ...poolView() }));
+  action('add-bounty', actionAddBounty);
+  action('update-bounty', actionUpdateBounty);
+  action('delete-bounty', actionDeleteBounty);
+  action('add-tile', actionAddTile);
+  action('remove-tile', actionRemoveTile);
+  action('board-size', actionSetBoardSize);
 
   // The control panel needs the key to build Stream Deck URLs — admin only.
   app.get('/api/show/key', requireAdmin, (req, res) => res.json({ key: showKey }));
